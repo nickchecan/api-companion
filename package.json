@@ -14,8 +14,8 @@
   "contributes": {
     "commands": [
       {
-        "command": "api-companion.helloWorld",
-        "title": "Hello World"
+        "command": "api-companion.openApiWorkbench",
+        "title": "API Companion: Open API Workbench"
       }
     ]
   },
