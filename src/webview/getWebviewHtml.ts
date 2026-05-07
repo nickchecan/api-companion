@@ -118,11 +118,58 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 	<section class="response" id="response" aria-label="Response area"></section>
 
 	<script nonce="${nonce}">
+		const vscode = acquireVsCodeApi();
 		const form = document.getElementById('request-form');
+		const method = document.getElementById('method');
+		const url = document.getElementById('url');
+		const send = document.getElementById('send');
+		const response = document.getElementById('response');
+		let loadedHeaders = {};
 
 		form.addEventListener('submit', (event) => {
 			event.preventDefault();
+			send.disabled = true;
+			response.textContent = 'Sending...';
+
+			vscode.postMessage({
+				type: 'sendRequest',
+				method: method.value,
+				url: url.value,
+				headers: loadedHeaders,
+			});
 		});
+
+		window.addEventListener('message', (event) => {
+			const message = event.data;
+			send.disabled = false;
+
+			if (message.type === 'requestComplete') {
+				response.textContent = formatResponse(message.response);
+				return;
+			}
+
+			if (message.type === 'requestError') {
+				response.textContent = 'Request failed\\n\\n' + message.message;
+				return;
+			}
+
+		});
+
+		function formatResponse(result) {
+			const headers = Object.entries(result.headers)
+				.map(([name, value]) => name + ': ' + value)
+				.join('\\n');
+
+			return [
+				'Status: ' + result.status + ' ' + result.statusText,
+				'',
+				'Headers:',
+				headers || '(none)',
+				'',
+				'Body:',
+				result.body || '(empty)',
+			].join('\\n');
+		}
 	</script>
 </body>
 </html>`;
