@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 
 import { executeRequest } from '../request/requestRunner';
+import { RequestFileDefinition } from '../request/types';
 import { getWebviewHtml } from './getWebviewHtml';
 
 interface SendRequestMessage {
@@ -46,6 +47,13 @@ export class ApiWorkbenchPanel {
 
 		ApiWorkbenchPanel.currentPanel = new ApiWorkbenchPanel(panel);
 		return ApiWorkbenchPanel.currentPanel;
+	}
+
+	public async loadRequest(request: RequestFileDefinition): Promise<void> {
+		await this.panel.webview.postMessage({
+			type: 'loadRequest',
+			request,
+		});
 	}
 
 	private async handleMessage(message: unknown): Promise<void> {

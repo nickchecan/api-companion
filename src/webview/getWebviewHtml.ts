@@ -153,6 +153,12 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 				return;
 			}
 
+			if (message.type === 'loadRequest') {
+				method.value = message.request.method;
+				url.value = message.request.url;
+				loadedHeaders = message.request.headers || {};
+				response.textContent = 'Loaded request: ' + message.request.name;
+			}
 		});
 
 		function formatResponse(result) {

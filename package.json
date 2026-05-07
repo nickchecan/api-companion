@@ -16,6 +16,10 @@
       {
         "command": "api-companion.openApiWorkbench",
         "title": "API Companion: Open API Workbench"
+      },
+      {
+        "command": "api-companion.loadRequestFile",
+        "title": "API Companion: Load Request File"
       }
     ]
   },
