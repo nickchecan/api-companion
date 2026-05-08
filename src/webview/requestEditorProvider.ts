@@ -30,33 +30,35 @@ export class RequestEditorProvider implements vscode.CustomTextEditorProvider {
 			localResourceRoots: [this.extensionUri],
 		};
 
-			let pendingDocumentText: string | undefined;
-			const messageSubscription = initializeRequestWebview(webviewPanel.webview, {
-				onReady: () => {
-					void this.loadDocument(webviewPanel.webview, document);
-				},
-				onRequestChanged: (message) => {
-					let nextText: string;
-					try {
-						nextText = this.createUpdatedDocumentText(document, message);
-					} catch {
-						return;
-					}
+		let pendingDocumentText: string | undefined;
+		const messageSubscription = initializeRequestWebview(webviewPanel.webview, {
+			onReady: () => {
+				void this.loadDocument(webviewPanel, document);
+			},
+			onRequestChanged: (message) => {
+				let nextText: string;
+				try {
+					nextText = this.createUpdatedDocumentText(document, message);
+				} catch {
+					return;
+				}
 
-					if (nextText !== document.getText()) {
-						pendingDocumentText = nextText;
-						void this.updateDocument(document, nextText);
-					}
-				},
-			});
-			const documentSubscription = vscode.workspace.onDidChangeTextDocument((event) => {
-				if (event.document.uri.toString() === document.uri.toString()) {
-					if (event.document.getText() === pendingDocumentText) {
-						pendingDocumentText = undefined;
-						return;
-					}
+				webviewPanel.title = readRequestTitle(message.name);
 
-					void this.loadDocument(webviewPanel.webview, event.document);
+				if (nextText !== document.getText()) {
+					pendingDocumentText = nextText;
+					void this.updateDocument(document, nextText);
+				}
+			},
+		});
+		const documentSubscription = vscode.workspace.onDidChangeTextDocument((event) => {
+			if (event.document.uri.toString() === document.uri.toString()) {
+				if (event.document.getText() === pendingDocumentText) {
+					pendingDocumentText = undefined;
+					return;
+				}
+
+					void this.loadDocument(webviewPanel, event.document);
 				}
 			});
 
@@ -65,15 +67,17 @@ export class RequestEditorProvider implements vscode.CustomTextEditorProvider {
 			documentSubscription.dispose();
 		});
 
-		void this.loadDocument(webviewPanel.webview, document);
+		void this.loadDocument(webviewPanel, document);
 	}
 
-	private async loadDocument(webview: vscode.Webview, document: vscode.TextDocument): Promise<void> {
+	private async loadDocument(webviewPanel: vscode.WebviewPanel, document: vscode.TextDocument): Promise<void> {
 		try {
 			const request = parseRequestFile(document.getText());
-			await loadRequestInWebview(webview, request);
+			webviewPanel.title = readRequestTitle(request.name);
+			await loadRequestInWebview(webviewPanel.webview, request);
 		} catch (error) {
-			await webview.postMessage({
+			webviewPanel.title = 'API Companion Request';
+			await webviewPanel.webview.postMessage({
 				type: 'requestError',
 				message: error instanceof Error ? error.message : 'Unable to load request file.',
 			});
@@ -97,6 +101,7 @@ export class RequestEditorProvider implements vscode.CustomTextEditorProvider {
 	private createUpdatedDocumentText(document: vscode.TextDocument, message: RequestChangedMessage): string {
 		const parsed = JSON.parse(document.getText()) as Record<string, unknown>;
 
+		parsed.name = message.name.trim() || 'Untitled Request';
 		parsed.method = message.method;
 		parsed.url = message.url;
 		parsed.headers = message.headers;
@@ -112,4 +117,8 @@ function readBodyValue(body: string): unknown {
 	} catch {
 		return body;
 	}
+}
+
+function readRequestTitle(name: string): string {
+	return name.trim() || 'Untitled Request';
 }

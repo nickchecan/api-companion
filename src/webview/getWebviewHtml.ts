@@ -25,6 +25,49 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 			font-size: var(--vscode-font-size);
 		}
 
+		.request-title {
+			display: inline-flex;
+			align-items: center;
+			gap: 8px;
+			margin: 0 0 12px;
+			font-size: 20px;
+			font-weight: 600;
+			line-height: 1.3;
+			color: var(--vscode-editor-foreground);
+		}
+
+		.request-title-text {
+			cursor: text;
+		}
+
+		.request-title-input {
+			width: min(520px, 80vw);
+			height: auto;
+			padding: 0;
+			color: var(--vscode-editor-foreground);
+			background: transparent;
+			border: 0;
+			border-bottom: 1px solid var(--vscode-focusBorder);
+			font: inherit;
+		}
+
+		.request-title-input:focus {
+			outline: none;
+		}
+
+		.request-title-icon {
+			width: 16px;
+			height: 16px;
+			color: var(--vscode-descriptionForeground);
+			opacity: 0;
+			transition: opacity 120ms ease;
+		}
+
+		.request-title:hover .request-title-icon,
+		.request-title:focus-within .request-title-icon {
+			opacity: 0.65;
+		}
+
 		.request-bar {
 			display: grid;
 			grid-template-columns: minmax(110px, 140px) minmax(180px, 1fr) auto;
@@ -256,6 +299,8 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 				grid-template-columns: auto minmax(0, 1fr);
 				max-height: 48vh;
 				overflow: auto;
+				background: var(--vscode-editor-background);
+				cursor: text;
 			}
 
 			.response-line-numbers {
@@ -271,6 +316,9 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 			.response-body-content .response-content {
 				min-width: 0;
 				overflow: visible;
+				background: var(--vscode-editor-background);
+				cursor: text;
+				user-select: text;
 			}
 
 			.hidden {
@@ -297,6 +345,14 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 	</style>
 </head>
 <body>
+	<h1 class="request-title" id="request-title-container">
+		<span class="request-title-text" id="request-title">API Companion Request</span>
+		<input class="request-title-input hidden" id="request-title-input" aria-label="Request title">
+		<svg class="request-title-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+			<path d="M12 20h9"></path>
+			<path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"></path>
+		</svg>
+	</h1>
 	<form class="request-bar" id="request-form">
 		<label>
 			<span class="sr-only">HTTP method</span>
@@ -377,6 +433,9 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 	<script nonce="${nonce}">
 			const vscode = acquireVsCodeApi();
 			const form = document.getElementById('request-form');
+			const requestTitleContainer = document.getElementById('request-title-container');
+			const requestTitle = document.getElementById('request-title');
+			const requestTitleInput = document.getElementById('request-title-input');
 				const method = document.getElementById('method');
 				const url = document.getElementById('url');
 				const send = document.getElementById('send');
@@ -402,6 +461,30 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 				const responseBody = document.getElementById('response-body');
 				renderRequestParamsFromUrl();
 				renderRequestHeaders({});
+
+				requestTitleContainer.addEventListener('click', (event) => {
+					if (event.target === requestTitleInput) {
+						return;
+					}
+
+					startTitleEdit();
+				});
+
+				requestTitleInput.addEventListener('keydown', (event) => {
+					if (event.key === 'Enter') {
+						event.preventDefault();
+						commitTitleEdit();
+					}
+
+					if (event.key === 'Escape') {
+						event.preventDefault();
+						cancelTitleEdit();
+					}
+				});
+
+				requestTitleInput.addEventListener('blur', () => {
+					commitTitleEdit();
+				});
 
 				requestParamsTab.addEventListener('click', () => {
 					showRequestTab('params');
@@ -482,6 +565,7 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 				}
 
 				if (message.type === 'loadRequest') {
+						setRequestTitle(message.request.name);
 						method.value = message.request.method;
 						url.value = message.request.url;
 						renderRequestParamsFromUrl();
@@ -664,11 +748,44 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 				function notifyRequestChanged() {
 					vscode.postMessage({
 						type: 'requestChanged',
+						name: requestTitle.textContent || 'Untitled Request',
 						method: method.value,
 						url: url.value,
 						headers: readRequestHeaders(),
 						body: requestBody.value,
 					});
+				}
+
+				function setRequestTitle(value) {
+					const title = value.trim() || 'Untitled Request';
+
+					requestTitle.textContent = title;
+					requestTitleInput.value = title;
+				}
+
+				function startTitleEdit() {
+					requestTitleInput.value = requestTitle.textContent || '';
+					requestTitle.classList.add('hidden');
+					requestTitleInput.classList.remove('hidden');
+					requestTitleInput.focus();
+					requestTitleInput.select();
+				}
+
+				function commitTitleEdit() {
+					if (requestTitleInput.classList.contains('hidden')) {
+						return;
+					}
+
+					setRequestTitle(requestTitleInput.value);
+					requestTitleInput.classList.add('hidden');
+					requestTitle.classList.remove('hidden');
+					notifyRequestChanged();
+				}
+
+				function cancelTitleEdit() {
+					requestTitleInput.value = requestTitle.textContent || '';
+					requestTitleInput.classList.add('hidden');
+					requestTitle.classList.remove('hidden');
 				}
 
 				function setRequestBodyContent(content) {
