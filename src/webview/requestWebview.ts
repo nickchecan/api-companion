@@ -18,6 +18,7 @@ interface WebviewReadyMessage {
 
 export interface RequestChangedMessage {
 	type: 'requestChanged';
+	name: string;
 	method: string;
 	url: string;
 	headers: Record<string, string>;
@@ -118,6 +119,7 @@ function isRequestChangedMessage(message: unknown): message is RequestChangedMes
 	const candidate = message as Partial<RequestChangedMessage>;
 
 	return candidate.type === 'requestChanged'
+		&& typeof candidate.name === 'string'
 		&& typeof candidate.method === 'string'
 		&& typeof candidate.url === 'string'
 		&& typeof candidate.body === 'string'
