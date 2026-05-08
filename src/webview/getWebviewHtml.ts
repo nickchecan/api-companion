@@ -161,6 +161,10 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 			}
 		});
 
+		vscode.postMessage({
+			type: 'webviewReady',
+		});
+
 		function formatResponse(result) {
 			const headers = Object.entries(result.headers)
 				.map(([name, value]) => name + ': ' + value)
