@@ -66,15 +66,93 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 			cursor: wait;
 		}
 
-		.response {
-			min-height: 260px;
-			margin-top: 16px;
-			padding: 12px;
-			white-space: pre-wrap;
-			color: var(--vscode-editor-foreground);
-			background: var(--vscode-editor-inactiveSelectionBackground);
-			border: 1px solid var(--vscode-panel-border);
-		}
+			.response-panel {
+				margin-top: 16px;
+				border: 1px solid var(--vscode-panel-border);
+				background: var(--vscode-editor-inactiveSelectionBackground);
+			}
+
+			.response-tabs {
+				display: flex;
+				align-items: center;
+				background: var(--vscode-sideBarSectionHeader-background);
+				border-bottom: 1px solid var(--vscode-panel-border);
+			}
+
+			.response-tab-list {
+				display: flex;
+			}
+
+			.response-tab {
+				height: 34px;
+				color: var(--vscode-editor-foreground);
+				background: transparent;
+				border: 0;
+				border-right: 1px solid var(--vscode-panel-border);
+				padding: 0 14px;
+				cursor: pointer;
+			}
+
+			.response-tab:hover {
+				background: var(--vscode-list-hoverBackground);
+			}
+
+			.response-tab.active {
+				background: var(--vscode-editor-inactiveSelectionBackground);
+				box-shadow: inset 0 -2px 0 var(--vscode-focusBorder);
+			}
+
+			.response-status {
+				margin-left: auto;
+				padding: 0 12px;
+				color: var(--vscode-descriptionForeground);
+				white-space: nowrap;
+			}
+
+			.response-panel-content {
+				min-height: 320px;
+			}
+
+			.response-content,
+			.response-line-numbers {
+				margin: 0;
+				box-sizing: border-box;
+				white-space: pre-wrap;
+				font-family: var(--vscode-editor-font-family);
+				font-size: var(--vscode-editor-font-size);
+				line-height: 1.45;
+			}
+
+			.response-content {
+				padding: 12px;
+				color: var(--vscode-editor-foreground);
+			}
+
+			.response-body-content {
+				display: grid;
+				grid-template-columns: auto minmax(0, 1fr);
+				max-height: 48vh;
+				overflow: auto;
+			}
+
+			.response-line-numbers {
+				min-width: 44px;
+				padding: 12px 8px;
+				text-align: right;
+				user-select: none;
+				color: var(--vscode-editorLineNumber-foreground);
+				background: var(--vscode-editorGutter-background);
+				border-right: 1px solid var(--vscode-panel-border);
+			}
+
+			.response-body-content .response-content {
+				min-width: 0;
+				overflow: visible;
+			}
+
+			.hidden {
+				display: none;
+			}
 
 		.sr-only {
 			position: absolute;
@@ -115,21 +193,55 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 		</label>
 		<button id="send" type="submit">Send</button>
 	</form>
-	<section class="response" id="response" aria-label="Response area"></section>
+		<section class="response-panel" aria-label="Response area">
+			<div class="response-tabs">
+				<div class="response-tab-list" role="tablist" aria-label="Response sections">
+					<button class="response-tab active" id="headers-tab" type="button" role="tab" aria-selected="true" aria-controls="headers-panel">Headers</button>
+					<button class="response-tab" id="body-tab" type="button" role="tab" aria-selected="false" aria-controls="body-panel">Body</button>
+				</div>
+				<div class="response-status" id="response-status" aria-live="polite">No response yet.</div>
+			</div>
+			<div class="response-panel-content" id="headers-panel" role="tabpanel" aria-labelledby="headers-tab">
+				<pre class="response-content" id="response-headers">(none)</pre>
+			</div>
+			<div class="response-panel-content hidden" id="body-panel" role="tabpanel" aria-labelledby="body-tab">
+				<div class="response-body-content">
+					<pre class="response-line-numbers" id="response-body-lines" aria-hidden="true">1</pre>
+					<pre class="response-content" id="response-body">(empty)</pre>
+				</div>
+			</div>
+		</section>
 
 	<script nonce="${nonce}">
 		const vscode = acquireVsCodeApi();
 		const form = document.getElementById('request-form');
-		const method = document.getElementById('method');
-		const url = document.getElementById('url');
-		const send = document.getElementById('send');
-		const response = document.getElementById('response');
-		let loadedHeaders = {};
+			const method = document.getElementById('method');
+			const url = document.getElementById('url');
+			const send = document.getElementById('send');
+			const headersTab = document.getElementById('headers-tab');
+			const bodyTab = document.getElementById('body-tab');
+			const headersPanel = document.getElementById('headers-panel');
+			const bodyPanel = document.getElementById('body-panel');
+			const responseStatus = document.getElementById('response-status');
+			const responseHeaders = document.getElementById('response-headers');
+			const responseBodyLines = document.getElementById('response-body-lines');
+			const responseBody = document.getElementById('response-body');
+			let loadedHeaders = {};
+
+			headersTab.addEventListener('click', () => {
+				showResponseTab('headers');
+			});
+
+			bodyTab.addEventListener('click', () => {
+				showResponseTab('body');
+			});
 
 		form.addEventListener('submit', (event) => {
 			event.preventDefault();
-			send.disabled = true;
-			response.textContent = 'Sending...';
+				send.disabled = true;
+				responseStatus.textContent = 'Sending...';
+				responseHeaders.textContent = '(none)';
+				setBodyContent('(empty)');
 
 			vscode.postMessage({
 				type: 'sendRequest',
@@ -144,41 +256,75 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 			send.disabled = false;
 
 			if (message.type === 'requestComplete') {
-				response.textContent = formatResponse(message.response);
+				renderResponse(message.response);
 				return;
 			}
 
-			if (message.type === 'requestError') {
-				response.textContent = 'Request failed\\n\\n' + message.message;
-				return;
-			}
+				if (message.type === 'requestError') {
+					responseStatus.textContent = 'Request failed';
+					responseHeaders.textContent = '(none)';
+					setBodyContent(message.message);
+					return;
+				}
 
 			if (message.type === 'loadRequest') {
 				method.value = message.request.method;
 				url.value = message.request.url;
-				loadedHeaders = message.request.headers || {};
-				response.textContent = 'Loaded request: ' + message.request.name;
-			}
+					loadedHeaders = message.request.headers || {};
+					responseStatus.textContent = 'Loaded request: ' + message.request.name;
+					responseHeaders.textContent = formatHeaders(loadedHeaders);
+					setBodyContent(message.request.body === null || message.request.body === undefined
+						? '(empty)'
+						: formatBody(message.request.body));
+				}
 		});
 
 		vscode.postMessage({
 			type: 'webviewReady',
 		});
 
-		function formatResponse(result) {
-			const headers = Object.entries(result.headers)
+			function renderResponse(result) {
+				responseStatus.textContent = 'Status: ' + result.status + ' ' + result.statusText;
+				responseHeaders.textContent = formatHeaders(result.headers);
+				setBodyContent(result.body || '(empty)');
+			}
+
+			function showResponseTab(tabName) {
+				const showHeaders = tabName === 'headers';
+
+				headersTab.classList.toggle('active', showHeaders);
+				bodyTab.classList.toggle('active', !showHeaders);
+				headersTab.setAttribute('aria-selected', String(showHeaders));
+				bodyTab.setAttribute('aria-selected', String(!showHeaders));
+				headersPanel.classList.toggle('hidden', !showHeaders);
+				bodyPanel.classList.toggle('hidden', showHeaders);
+			}
+
+			function setBodyContent(content) {
+				responseBody.textContent = content;
+				responseBodyLines.textContent = formatLineNumbers(content);
+			}
+
+			function formatLineNumbers(content) {
+				const lineCount = content.split('\\n').length;
+
+				return Array.from({ length: lineCount }, (_item, index) => String(index + 1)).join('\\n');
+			}
+
+		function formatHeaders(headers) {
+			const lines = Object.entries(headers)
 				.map(([name, value]) => name + ': ' + value)
 				.join('\\n');
 
-			return [
-				'Status: ' + result.status + ' ' + result.statusText,
-				'',
-				'Headers:',
-				headers || '(none)',
-				'',
-				'Body:',
-				result.body || '(empty)',
-			].join('\\n');
+			return lines || '(none)';
+		}
+
+		function formatBody(body) {
+			if (typeof body === 'string') {
+				return body || '(empty)';
+			}
+
+			return JSON.stringify(body, null, 2);
 		}
 	</script>
 </body>
