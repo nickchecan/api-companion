@@ -9,7 +9,9 @@
   "categories": [
     "Other"
   ],
-  "activationEvents": [],
+  "activationEvents": [
+    "onCustomEditor:api-companion.requestEditor"
+  ],
   "main": "./dist/extension.js",
   "contributes": {
     "commands": [
@@ -20,6 +22,18 @@
       {
         "command": "api-companion.loadRequestFile",
         "title": "API Companion: Load Request File"
+      }
+    ],
+    "customEditors": [
+      {
+        "viewType": "api-companion.requestEditor",
+        "displayName": "API Companion Request",
+        "selector": [
+          {
+            "filenamePattern": "*.request.json"
+          }
+        ],
+        "priority": "default"
       }
     ]
   },

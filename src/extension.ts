@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 
 import { isRequestFileName, parseRequestFile } from './request/requestFile';
+import { RequestEditorProvider } from './webview/requestEditorProvider';
 import { ApiWorkbenchPanel } from './webview/requestPanel';
 
 export function activate(context: vscode.ExtensionContext) {
@@ -31,7 +32,7 @@ export function activate(context: vscode.ExtensionContext) {
 		}
 	});
 
-	context.subscriptions.push(openApiWorkbench, loadRequestFile);
+	context.subscriptions.push(openApiWorkbench, loadRequestFile, RequestEditorProvider.register(context));
 }
 
 export function deactivate() {}
