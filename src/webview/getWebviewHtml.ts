@@ -61,10 +61,133 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 			background: var(--vscode-button-hoverBackground);
 		}
 
-		button:disabled {
-			opacity: 0.7;
-			cursor: wait;
-		}
+			button:disabled {
+				opacity: 0.7;
+				cursor: wait;
+			}
+
+			.request-panel {
+				margin-top: 16px;
+				border: 1px solid var(--vscode-panel-border);
+				background: var(--vscode-editor-inactiveSelectionBackground);
+			}
+
+			.request-tabs {
+				display: flex;
+				background: var(--vscode-sideBarSectionHeader-background);
+				border-bottom: 1px solid var(--vscode-panel-border);
+			}
+
+			.request-tab {
+				height: 34px;
+				color: var(--vscode-editor-foreground);
+				background: transparent;
+				border: 0;
+				border-right: 1px solid var(--vscode-panel-border);
+				padding: 0 14px;
+				cursor: pointer;
+			}
+
+			.request-tab:hover {
+				background: var(--vscode-list-hoverBackground);
+			}
+
+			.request-tab.active {
+				background: var(--vscode-editor-inactiveSelectionBackground);
+				box-shadow: inset 0 -2px 0 var(--vscode-focusBorder);
+			}
+
+			.request-panel-content {
+				padding: 12px;
+			}
+
+			.request-headers-table {
+				width: 100%;
+				border-collapse: collapse;
+			}
+
+			.request-headers-table th {
+				padding: 0 8px 8px 0;
+				text-align: left;
+				font-weight: 600;
+				color: var(--vscode-descriptionForeground);
+			}
+
+			.request-headers-table td {
+				padding: 0 8px 8px 0;
+			}
+
+			.request-headers-table td:last-child,
+			.request-headers-table th:last-child {
+				width: 1%;
+				padding-right: 0;
+			}
+
+			.request-header-input {
+				width: 100%;
+				min-width: 0;
+			}
+
+			.request-header-remove {
+				display: inline-flex;
+				align-items: center;
+				justify-content: center;
+				width: 32px;
+				padding: 0;
+			}
+
+			.request-header-remove svg {
+				width: 16px;
+				height: 16px;
+				pointer-events: none;
+			}
+
+			.request-header-add {
+				margin-top: 4px;
+			}
+
+			.request-body-editor {
+				display: grid;
+				grid-template-columns: auto minmax(0, 1fr);
+				background: var(--vscode-editor-background);
+			}
+
+			.request-body-line-numbers {
+				margin: 0;
+				min-width: 44px;
+				padding: 12px 8px;
+				box-sizing: border-box;
+				text-align: right;
+				user-select: none;
+				white-space: pre-wrap;
+				overflow: hidden;
+				color: var(--vscode-editorLineNumber-foreground);
+				background: var(--vscode-editorGutter-background);
+				border-right: 1px solid var(--vscode-panel-border);
+				font-family: var(--vscode-editor-font-family);
+				font-size: var(--vscode-editor-font-size);
+				line-height: 1.45;
+			}
+
+			.request-body-input {
+				display: block;
+				width: 100%;
+				min-height: 140px;
+				padding: 12px;
+				box-sizing: border-box;
+				resize: vertical;
+				color: var(--vscode-editor-foreground);
+				background: var(--vscode-editor-background);
+				border: 0;
+				font-family: var(--vscode-editor-font-family);
+				font-size: var(--vscode-editor-font-size);
+				line-height: 1.45;
+			}
+
+			.request-body-input:focus {
+				outline: 1px solid var(--vscode-focusBorder);
+				outline-offset: -1px;
+			}
 
 			.response-panel {
 				margin-top: 16px;
@@ -192,63 +315,126 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 			<input id="url" name="url" type="url" placeholder="https://api.example.com/resource" aria-label="Request URL">
 		</label>
 		<button id="send" type="submit">Send</button>
-	</form>
+		</form>
+		<section class="request-panel" aria-label="Request configuration area">
+			<div class="request-tabs" role="tablist" aria-label="Request sections">
+				<button class="request-tab active" id="request-headers-tab" type="button" role="tab" aria-selected="true" aria-controls="request-headers-panel">Headers</button>
+				<button class="request-tab" id="request-body-tab" type="button" role="tab" aria-selected="false" aria-controls="request-body-panel">Body</button>
+			</div>
+			<div class="request-panel-content" id="request-headers-panel" role="tabpanel" aria-labelledby="request-headers-tab">
+				<table class="request-headers-table" aria-label="Request headers">
+					<thead>
+						<tr>
+							<th scope="col">Key</th>
+							<th scope="col">Value</th>
+							<th scope="col"><span class="sr-only">Actions</span></th>
+						</tr>
+					</thead>
+					<tbody id="request-headers-table"></tbody>
+				</table>
+				<button class="request-header-add" id="add-request-header" type="button">Add Header</button>
+			</div>
+			<div class="request-panel-content hidden" id="request-body-panel" role="tabpanel" aria-labelledby="request-body-tab">
+				<div class="request-body-editor">
+					<pre class="request-body-line-numbers" id="request-body-lines" aria-hidden="true">1</pre>
+					<textarea class="request-body-input" id="request-body" spellcheck="false" placeholder="{&#10;  &quot;example&quot;: true&#10;}"></textarea>
+				</div>
+			</div>
+		</section>
 		<section class="response-panel" aria-label="Response area">
 			<div class="response-tabs">
 				<div class="response-tab-list" role="tablist" aria-label="Response sections">
-					<button class="response-tab active" id="headers-tab" type="button" role="tab" aria-selected="true" aria-controls="headers-panel">Headers</button>
-					<button class="response-tab" id="body-tab" type="button" role="tab" aria-selected="false" aria-controls="body-panel">Body</button>
+					<button class="response-tab active" id="body-tab" type="button" role="tab" aria-selected="true" aria-controls="body-panel">Body</button>
+					<button class="response-tab" id="headers-tab" type="button" role="tab" aria-selected="false" aria-controls="headers-panel">Headers</button>
 				</div>
 				<div class="response-status" id="response-status" aria-live="polite">No response yet.</div>
 			</div>
-			<div class="response-panel-content" id="headers-panel" role="tabpanel" aria-labelledby="headers-tab">
-				<pre class="response-content" id="response-headers">(none)</pre>
-			</div>
-			<div class="response-panel-content hidden" id="body-panel" role="tabpanel" aria-labelledby="body-tab">
+			<div class="response-panel-content" id="body-panel" role="tabpanel" aria-labelledby="body-tab">
 				<div class="response-body-content">
 					<pre class="response-line-numbers" id="response-body-lines" aria-hidden="true">1</pre>
 					<pre class="response-content" id="response-body">(empty)</pre>
 				</div>
 			</div>
+			<div class="response-panel-content hidden" id="headers-panel" role="tabpanel" aria-labelledby="headers-tab">
+				<pre class="response-content" id="response-headers">(none)</pre>
+			</div>
 		</section>
 
 	<script nonce="${nonce}">
-		const vscode = acquireVsCodeApi();
-		const form = document.getElementById('request-form');
-			const method = document.getElementById('method');
-			const url = document.getElementById('url');
-			const send = document.getElementById('send');
-			const headersTab = document.getElementById('headers-tab');
-			const bodyTab = document.getElementById('body-tab');
-			const headersPanel = document.getElementById('headers-panel');
+			const vscode = acquireVsCodeApi();
+			const form = document.getElementById('request-form');
+				const method = document.getElementById('method');
+				const url = document.getElementById('url');
+				const send = document.getElementById('send');
+				const requestHeadersTab = document.getElementById('request-headers-tab');
+				const requestBodyTab = document.getElementById('request-body-tab');
+				const requestHeadersPanel = document.getElementById('request-headers-panel');
+				const requestBodyPanel = document.getElementById('request-body-panel');
+				const requestHeadersTable = document.getElementById('request-headers-table');
+				const addRequestHeader = document.getElementById('add-request-header');
+				const requestBodyLines = document.getElementById('request-body-lines');
+				const requestBody = document.getElementById('request-body');
+				const bodyTab = document.getElementById('body-tab');
+				const headersTab = document.getElementById('headers-tab');
 			const bodyPanel = document.getElementById('body-panel');
+			const headersPanel = document.getElementById('headers-panel');
 			const responseStatus = document.getElementById('response-status');
 			const responseHeaders = document.getElementById('response-headers');
-			const responseBodyLines = document.getElementById('response-body-lines');
-			const responseBody = document.getElementById('response-body');
-			let loadedHeaders = {};
+				const responseBodyLines = document.getElementById('response-body-lines');
+				const responseBody = document.getElementById('response-body');
+				renderRequestHeaders({});
 
-			headersTab.addEventListener('click', () => {
-				showResponseTab('headers');
-			});
+				requestHeadersTab.addEventListener('click', () => {
+					showRequestTab('headers');
+				});
+
+				requestBodyTab.addEventListener('click', () => {
+					showRequestTab('body');
+				});
+
+				addRequestHeader.addEventListener('click', () => {
+					addRequestHeaderRow('', '');
+				});
+
+				method.addEventListener('change', () => {
+					notifyRequestChanged();
+				});
+
+				url.addEventListener('input', () => {
+					notifyRequestChanged();
+				});
+
+				requestBody.addEventListener('input', () => {
+					updateRequestBodyLineNumbers();
+					notifyRequestChanged();
+				});
+
+				requestBody.addEventListener('scroll', () => {
+					requestBodyLines.scrollTop = requestBody.scrollTop;
+				});
 
 			bodyTab.addEventListener('click', () => {
 				showResponseTab('body');
 			});
 
-		form.addEventListener('submit', (event) => {
-			event.preventDefault();
+			headersTab.addEventListener('click', () => {
+				showResponseTab('headers');
+			});
+
+			form.addEventListener('submit', (event) => {
+				event.preventDefault();
 				send.disabled = true;
 				responseStatus.textContent = 'Sending...';
 				responseHeaders.textContent = '(none)';
 				setBodyContent('(empty)');
 
 			vscode.postMessage({
-				type: 'sendRequest',
-				method: method.value,
-				url: url.value,
-				headers: loadedHeaders,
-			});
+						type: 'sendRequest',
+						method: method.value,
+						url: url.value,
+						headers: readRequestHeaders(),
+						body: requestBody.value,
+					});
 		});
 
 		window.addEventListener('message', (event) => {
@@ -267,38 +453,138 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 					return;
 				}
 
-			if (message.type === 'loadRequest') {
-				method.value = message.request.method;
-				url.value = message.request.url;
-					loadedHeaders = message.request.headers || {};
-					responseStatus.textContent = 'Loaded request: ' + message.request.name;
-					responseHeaders.textContent = formatHeaders(loadedHeaders);
-					setBodyContent(message.request.body === null || message.request.body === undefined
-						? '(empty)'
-						: formatBody(message.request.body));
+				if (message.type === 'loadRequest') {
+						method.value = message.request.method;
+						url.value = message.request.url;
+						renderRequestHeaders(message.request.headers || {});
+						setRequestBodyContent(message.request.body === null || message.request.body === undefined
+							? ''
+							: formatBody(message.request.body));
 				}
-		});
+			});
 
 		vscode.postMessage({
 			type: 'webviewReady',
 		});
 
-			function renderResponse(result) {
-				responseStatus.textContent = 'Status: ' + result.status + ' ' + result.statusText;
-				responseHeaders.textContent = formatHeaders(result.headers);
-				setBodyContent(result.body || '(empty)');
-			}
+				function renderResponse(result) {
+					responseStatus.textContent = 'Status: ' + result.status + ' ' + result.statusText;
+					responseHeaders.textContent = formatHeaders(result.headers);
+					setBodyContent(result.body || '(empty)');
+				}
 
-			function showResponseTab(tabName) {
-				const showHeaders = tabName === 'headers';
+				function showRequestTab(tabName) {
+					const showHeaders = tabName === 'headers';
 
-				headersTab.classList.toggle('active', showHeaders);
-				bodyTab.classList.toggle('active', !showHeaders);
-				headersTab.setAttribute('aria-selected', String(showHeaders));
-				bodyTab.setAttribute('aria-selected', String(!showHeaders));
-				headersPanel.classList.toggle('hidden', !showHeaders);
-				bodyPanel.classList.toggle('hidden', showHeaders);
-			}
+					requestHeadersTab.classList.toggle('active', showHeaders);
+					requestBodyTab.classList.toggle('active', !showHeaders);
+					requestHeadersTab.setAttribute('aria-selected', String(showHeaders));
+					requestBodyTab.setAttribute('aria-selected', String(!showHeaders));
+					requestHeadersPanel.classList.toggle('hidden', !showHeaders);
+					requestBodyPanel.classList.toggle('hidden', showHeaders);
+				}
+
+				function showResponseTab(tabName) {
+					const showBody = tabName === 'body';
+
+				bodyTab.classList.toggle('active', showBody);
+				headersTab.classList.toggle('active', !showBody);
+				bodyTab.setAttribute('aria-selected', String(showBody));
+				headersTab.setAttribute('aria-selected', String(!showBody));
+					bodyPanel.classList.toggle('hidden', !showBody);
+					headersPanel.classList.toggle('hidden', showBody);
+				}
+
+				function renderRequestHeaders(headers) {
+					requestHeadersTable.textContent = '';
+
+					const entries = Object.entries(headers);
+
+					if (entries.length === 0) {
+						addRequestHeaderRow('', '');
+						return;
+					}
+
+					for (const [name, value] of entries) {
+						addRequestHeaderRow(name, value);
+					}
+				}
+
+				function addRequestHeaderRow(name, value) {
+					const row = document.createElement('tr');
+					const nameCell = document.createElement('td');
+					const valueCell = document.createElement('td');
+					const actionCell = document.createElement('td');
+					const nameInput = document.createElement('input');
+					const valueInput = document.createElement('input');
+					const removeButton = document.createElement('button');
+
+					nameInput.className = 'request-header-input';
+					nameInput.placeholder = 'Header name';
+					nameInput.value = name;
+					valueInput.className = 'request-header-input';
+					valueInput.placeholder = 'Header value';
+					valueInput.value = value;
+					removeButton.className = 'request-header-remove';
+					removeButton.type = 'button';
+					removeButton.ariaLabel = 'Remove header';
+					removeButton.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>';
+					nameInput.addEventListener('input', () => {
+						notifyRequestChanged();
+					});
+					valueInput.addEventListener('input', () => {
+						notifyRequestChanged();
+					});
+					removeButton.addEventListener('click', () => {
+						row.remove();
+
+						if (requestHeadersTable.children.length === 0) {
+							addRequestHeaderRow('', '');
+						}
+
+						notifyRequestChanged();
+					});
+
+					nameCell.append(nameInput);
+					valueCell.append(valueInput);
+					actionCell.append(removeButton);
+					row.append(nameCell, valueCell, actionCell);
+					requestHeadersTable.append(row);
+				}
+
+				function readRequestHeaders() {
+					const headers = {};
+
+					for (const row of requestHeadersTable.querySelectorAll('tr')) {
+						const inputs = row.querySelectorAll('input');
+						const name = inputs[0].value.trim();
+
+						if (name) {
+							headers[name] = inputs[1].value;
+						}
+					}
+
+					return headers;
+				}
+
+				function notifyRequestChanged() {
+					vscode.postMessage({
+						type: 'requestChanged',
+						method: method.value,
+						url: url.value,
+						headers: readRequestHeaders(),
+						body: requestBody.value,
+					});
+				}
+
+				function setRequestBodyContent(content) {
+					requestBody.value = content;
+					updateRequestBodyLineNumbers();
+				}
+
+				function updateRequestBodyLineNumbers() {
+					requestBodyLines.textContent = formatLineNumbers(requestBody.value || ' ');
+				}
 
 			function setBodyContent(content) {
 				responseBody.textContent = content;

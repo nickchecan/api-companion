@@ -9,18 +9,44 @@ interface SendRequestMessage {
 	method: string;
 	url: string;
 	headers?: Record<string, string>;
+	body?: string;
 }
 
 interface WebviewReadyMessage {
 	type: 'webviewReady';
 }
 
-export function initializeRequestWebview(webview: vscode.Webview, onReady?: () => void): vscode.Disposable {
+export interface RequestChangedMessage {
+	type: 'requestChanged';
+	method: string;
+	url: string;
+	headers: Record<string, string>;
+	body: string;
+}
+
+export interface RequestWebviewHandlers {
+	onReady?: () => void;
+	onRequestChanged?: (message: RequestChangedMessage) => void;
+}
+
+export function initializeRequestWebview(
+	webview: vscode.Webview,
+	handlersOrOnReady?: RequestWebviewHandlers | (() => void),
+): vscode.Disposable {
+	const handlers = typeof handlersOrOnReady === 'function'
+		? { onReady: handlersOrOnReady }
+		: handlersOrOnReady ?? {};
+
 	webview.html = getWebviewHtml(webview);
 
 	return webview.onDidReceiveMessage((message: unknown) => {
 		if (isWebviewReadyMessage(message)) {
-			onReady?.();
+			handlers.onReady?.();
+			return;
+		}
+
+		if (isRequestChangedMessage(message)) {
+			handlers.onRequestChanged?.(message);
 			return;
 		}
 
@@ -45,6 +71,7 @@ async function handleMessage(webview: vscode.Webview, message: unknown): Promise
 			method: message.method,
 			url: message.url,
 			headers: message.headers,
+			body: message.body,
 		});
 
 		await webview.postMessage({
@@ -69,6 +96,7 @@ function isSendRequestMessage(message: unknown): message is SendRequestMessage {
 	return candidate.type === 'sendRequest'
 		&& typeof candidate.method === 'string'
 		&& typeof candidate.url === 'string'
+		&& (candidate.body === undefined || typeof candidate.body === 'string')
 		&& (candidate.headers === undefined || isStringRecord(candidate.headers));
 }
 
@@ -80,6 +108,20 @@ function isWebviewReadyMessage(message: unknown): message is WebviewReadyMessage
 	const candidate = message as Partial<WebviewReadyMessage>;
 
 	return candidate.type === 'webviewReady';
+}
+
+function isRequestChangedMessage(message: unknown): message is RequestChangedMessage {
+	if (!message || typeof message !== 'object') {
+		return false;
+	}
+
+	const candidate = message as Partial<RequestChangedMessage>;
+
+	return candidate.type === 'requestChanged'
+		&& typeof candidate.method === 'string'
+		&& typeof candidate.url === 'string'
+		&& typeof candidate.body === 'string'
+		&& isStringRecord(candidate.headers);
 }
 
 function isStringRecord(value: unknown): value is Record<string, string> {
