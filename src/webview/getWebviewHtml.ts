@@ -318,10 +318,24 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 		</form>
 		<section class="request-panel" aria-label="Request configuration area">
 			<div class="request-tabs" role="tablist" aria-label="Request sections">
-				<button class="request-tab active" id="request-headers-tab" type="button" role="tab" aria-selected="true" aria-controls="request-headers-panel">Headers</button>
+				<button class="request-tab active" id="request-params-tab" type="button" role="tab" aria-selected="true" aria-controls="request-params-panel">Params</button>
+				<button class="request-tab" id="request-headers-tab" type="button" role="tab" aria-selected="false" aria-controls="request-headers-panel">Headers</button>
 				<button class="request-tab" id="request-body-tab" type="button" role="tab" aria-selected="false" aria-controls="request-body-panel">Body</button>
 			</div>
-			<div class="request-panel-content" id="request-headers-panel" role="tabpanel" aria-labelledby="request-headers-tab">
+			<div class="request-panel-content" id="request-params-panel" role="tabpanel" aria-labelledby="request-params-tab">
+				<table class="request-headers-table" aria-label="Request query parameters">
+					<thead>
+						<tr>
+							<th scope="col">Key</th>
+							<th scope="col">Value</th>
+							<th scope="col"><span class="sr-only">Actions</span></th>
+						</tr>
+					</thead>
+					<tbody id="request-params-table"></tbody>
+				</table>
+				<button class="request-header-add" id="add-request-param" type="button">Add Param</button>
+			</div>
+			<div class="request-panel-content hidden" id="request-headers-panel" role="tabpanel" aria-labelledby="request-headers-tab">
 				<table class="request-headers-table" aria-label="Request headers">
 					<thead>
 						<tr>
@@ -366,11 +380,15 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 				const method = document.getElementById('method');
 				const url = document.getElementById('url');
 				const send = document.getElementById('send');
+				const requestParamsTab = document.getElementById('request-params-tab');
 				const requestHeadersTab = document.getElementById('request-headers-tab');
 				const requestBodyTab = document.getElementById('request-body-tab');
+				const requestParamsPanel = document.getElementById('request-params-panel');
 				const requestHeadersPanel = document.getElementById('request-headers-panel');
 				const requestBodyPanel = document.getElementById('request-body-panel');
+				const requestParamsTable = document.getElementById('request-params-table');
 				const requestHeadersTable = document.getElementById('request-headers-table');
+				const addRequestParam = document.getElementById('add-request-param');
 				const addRequestHeader = document.getElementById('add-request-header');
 				const requestBodyLines = document.getElementById('request-body-lines');
 				const requestBody = document.getElementById('request-body');
@@ -382,7 +400,12 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 			const responseHeaders = document.getElementById('response-headers');
 				const responseBodyLines = document.getElementById('response-body-lines');
 				const responseBody = document.getElementById('response-body');
+				renderRequestParamsFromUrl();
 				renderRequestHeaders({});
+
+				requestParamsTab.addEventListener('click', () => {
+					showRequestTab('params');
+				});
 
 				requestHeadersTab.addEventListener('click', () => {
 					showRequestTab('headers');
@@ -390,6 +413,10 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 
 				requestBodyTab.addEventListener('click', () => {
 					showRequestTab('body');
+				});
+
+				addRequestParam.addEventListener('click', () => {
+					addRequestParamRow('', '');
 				});
 
 				addRequestHeader.addEventListener('click', () => {
@@ -401,6 +428,7 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 				});
 
 				url.addEventListener('input', () => {
+					renderRequestParamsFromUrl();
 					notifyRequestChanged();
 				});
 
@@ -456,6 +484,7 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 				if (message.type === 'loadRequest') {
 						method.value = message.request.method;
 						url.value = message.request.url;
+						renderRequestParamsFromUrl();
 						renderRequestHeaders(message.request.headers || {});
 						setRequestBodyContent(message.request.body === null || message.request.body === undefined
 							? ''
@@ -474,14 +503,19 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 				}
 
 				function showRequestTab(tabName) {
+					const showParams = tabName === 'params';
 					const showHeaders = tabName === 'headers';
+					const showBody = tabName === 'body';
 
+					requestParamsTab.classList.toggle('active', showParams);
 					requestHeadersTab.classList.toggle('active', showHeaders);
-					requestBodyTab.classList.toggle('active', !showHeaders);
+					requestBodyTab.classList.toggle('active', showBody);
+					requestParamsTab.setAttribute('aria-selected', String(showParams));
 					requestHeadersTab.setAttribute('aria-selected', String(showHeaders));
-					requestBodyTab.setAttribute('aria-selected', String(!showHeaders));
+					requestBodyTab.setAttribute('aria-selected', String(showBody));
+					requestParamsPanel.classList.toggle('hidden', !showParams);
 					requestHeadersPanel.classList.toggle('hidden', !showHeaders);
-					requestBodyPanel.classList.toggle('hidden', showHeaders);
+					requestBodyPanel.classList.toggle('hidden', !showBody);
 				}
 
 				function showResponseTab(tabName) {
@@ -495,9 +529,23 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 					headersPanel.classList.toggle('hidden', showBody);
 				}
 
+				function renderRequestParamsFromUrl() {
+					requestParamsTable.textContent = '';
+
+					const entries = readParamsFromUrl();
+
+					if (entries.length === 0) {
+						addRequestParamRow('', '');
+						return;
+					}
+
+					for (const [name, value] of entries) {
+						addRequestParamRow(name, value);
+					}
+				}
+
 				function renderRequestHeaders(headers) {
 					requestHeadersTable.textContent = '';
-
 					const entries = Object.entries(headers);
 
 					if (entries.length === 0) {
@@ -510,7 +558,20 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 					}
 				}
 
+				function addRequestParamRow(name, value) {
+					addKeyValueRow(requestParamsTable, name, value, 'Param name', 'Param value', 'Remove param', () => {
+						updateUrlFromParams();
+						notifyRequestChanged();
+					});
+				}
+
 				function addRequestHeaderRow(name, value) {
+					addKeyValueRow(requestHeadersTable, name, value, 'Header name', 'Header value', 'Remove header', () => {
+						notifyRequestChanged();
+					});
+				}
+
+				function addKeyValueRow(table, name, value, namePlaceholder, valuePlaceholder, removeLabel, onChange) {
 					const row = document.createElement('tr');
 					const nameCell = document.createElement('td');
 					const valueCell = document.createElement('td');
@@ -520,51 +581,84 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 					const removeButton = document.createElement('button');
 
 					nameInput.className = 'request-header-input';
-					nameInput.placeholder = 'Header name';
+					nameInput.placeholder = namePlaceholder;
 					nameInput.value = name;
 					valueInput.className = 'request-header-input';
-					valueInput.placeholder = 'Header value';
+					valueInput.placeholder = valuePlaceholder;
 					valueInput.value = value;
 					removeButton.className = 'request-header-remove';
 					removeButton.type = 'button';
-					removeButton.ariaLabel = 'Remove header';
+					removeButton.ariaLabel = removeLabel;
 					removeButton.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>';
 					nameInput.addEventListener('input', () => {
-						notifyRequestChanged();
+						onChange();
 					});
 					valueInput.addEventListener('input', () => {
-						notifyRequestChanged();
+						onChange();
 					});
 					removeButton.addEventListener('click', () => {
 						row.remove();
 
-						if (requestHeadersTable.children.length === 0) {
-							addRequestHeaderRow('', '');
+						if (table.children.length === 0) {
+							addKeyValueRow(table, '', '', namePlaceholder, valuePlaceholder, removeLabel, onChange);
 						}
 
-						notifyRequestChanged();
+						onChange();
 					});
 
 					nameCell.append(nameInput);
 					valueCell.append(valueInput);
 					actionCell.append(removeButton);
 					row.append(nameCell, valueCell, actionCell);
-					requestHeadersTable.append(row);
+					table.append(row);
 				}
 
 				function readRequestHeaders() {
-					const headers = {};
+					return readKeyValueRows(requestHeadersTable);
+				}
 
-					for (const row of requestHeadersTable.querySelectorAll('tr')) {
+				function readRequestParams() {
+					return Object.entries(readKeyValueRows(requestParamsTable));
+				}
+
+				function readKeyValueRows(table) {
+					const values = {};
+
+					for (const row of table.querySelectorAll('tr')) {
 						const inputs = row.querySelectorAll('input');
 						const name = inputs[0].value.trim();
 
 						if (name) {
-							headers[name] = inputs[1].value;
+							values[name] = inputs[1].value;
 						}
 					}
 
-					return headers;
+					return values;
+				}
+
+				function readParamsFromUrl() {
+					try {
+						return Array.from(new URL(url.value).searchParams.entries());
+					} catch {
+						return [];
+					}
+				}
+
+				function updateUrlFromParams() {
+					let parsed;
+					try {
+						parsed = new URL(url.value);
+					} catch {
+						return;
+					}
+
+					parsed.search = '';
+
+					for (const [name, value] of readRequestParams()) {
+						parsed.searchParams.append(name, value);
+					}
+
+					url.value = parsed.toString();
 				}
 
 				function notifyRequestChanged() {
