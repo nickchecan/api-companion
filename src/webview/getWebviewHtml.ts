@@ -216,7 +216,23 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 			.request-body-editor {
 				display: grid;
 				grid-template-columns: auto minmax(0, 1fr);
+				position: relative;
+				--hover-line-height: 0px;
+				--hover-line-top: 0px;
 				background: var(--vscode-editor-background);
+			}
+
+			.request-body-editor.line-hover::before,
+			.response-body-content.line-hover::before {
+				content: "";
+				position: absolute;
+				top: var(--hover-line-top);
+				left: 0;
+				right: 0;
+				height: var(--hover-line-height);
+				background: var(--vscode-editor-lineHighlightBackground, var(--vscode-list-hoverBackground));
+				pointer-events: none;
+				z-index: 1;
 			}
 
 			.request-body-line-numbers {
@@ -234,6 +250,8 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 				font-family: var(--vscode-editor-font-family);
 				font-size: var(--vscode-editor-font-size);
 				line-height: 1.45;
+				position: relative;
+				z-index: 2;
 			}
 
 			.request-body-input {
@@ -244,11 +262,13 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 				box-sizing: border-box;
 				resize: vertical;
 				color: var(--vscode-editor-foreground);
-				background: var(--vscode-editor-background);
+				background: transparent;
 				border: 0;
 				font-family: var(--vscode-editor-font-family);
 				font-size: var(--vscode-editor-font-size);
 				line-height: 1.45;
+				position: relative;
+				z-index: 2;
 			}
 
 			.request-body-input:focus {
@@ -357,6 +377,9 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 				grid-template-columns: auto minmax(0, 1fr);
 				max-height: 48vh;
 				overflow: auto;
+				position: relative;
+				--hover-line-height: 0px;
+				--hover-line-top: 0px;
 				background: var(--vscode-editor-background);
 				cursor: text;
 			}
@@ -369,14 +392,18 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 				color: var(--vscode-editorLineNumber-foreground);
 				background: var(--vscode-editorGutter-background);
 				border-right: 1px solid var(--vscode-panel-border);
+				position: relative;
+				z-index: 2;
 			}
 
 			.response-body-content .response-content {
 				min-width: 0;
 				overflow: visible;
-				background: var(--vscode-editor-background);
+				background: transparent;
 				cursor: text;
 				user-select: text;
+				position: relative;
+				z-index: 2;
 			}
 
 			.hidden {
@@ -464,7 +491,7 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 				<button class="request-header-add" id="add-request-header" type="button">Add Header</button>
 			</div>
 			<div class="request-panel-content hidden" id="request-body-panel" role="tabpanel" aria-labelledby="request-body-tab">
-				<div class="request-body-editor">
+				<div class="request-body-editor" id="request-body-editor">
 					<pre class="request-body-line-numbers" id="request-body-lines" aria-hidden="true">1</pre>
 					<textarea class="request-body-input" id="request-body" spellcheck="false" placeholder="{&#10;  &quot;example&quot;: true&#10;}"></textarea>
 				</div>
@@ -482,7 +509,7 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 				</div>
 			</div>
 			<div class="response-panel-content" id="body-panel" role="tabpanel" aria-labelledby="body-tab">
-				<div class="response-body-content">
+				<div class="response-body-content" id="response-body-content">
 					<pre class="response-line-numbers" id="response-body-lines" aria-hidden="true">1</pre>
 					<pre class="response-content" id="response-body">(empty)</pre>
 				</div>
@@ -511,6 +538,7 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 				const requestHeadersTable = document.getElementById('request-headers-table');
 				const addRequestParam = document.getElementById('add-request-param');
 				const addRequestHeader = document.getElementById('add-request-header');
+				const requestBodyEditor = document.getElementById('request-body-editor');
 				const requestBodyLines = document.getElementById('request-body-lines');
 				const requestBody = document.getElementById('request-body');
 				const bodyTab = document.getElementById('body-tab');
@@ -520,6 +548,7 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 			const responseStatus = document.getElementById('response-status');
 			const responseTime = document.getElementById('response-time');
 			const responseHeaders = document.getElementById('response-headers');
+				const responseBodyContent = document.getElementById('response-body-content');
 				const responseBodyLines = document.getElementById('response-body-lines');
 				const responseBody = document.getElementById('response-body');
 				let requestStartedAt = 0;
@@ -587,6 +616,15 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 
 				requestBody.addEventListener('scroll', () => {
 					requestBodyLines.scrollTop = requestBody.scrollTop;
+					clearHoverLine(requestBodyEditor);
+				});
+
+				requestBody.addEventListener('mousemove', (event) => {
+					updateTextareaHoverLine(requestBodyEditor, requestBody, event);
+				});
+
+				requestBody.addEventListener('mouseleave', () => {
+					clearHoverLine(requestBodyEditor);
 				});
 
 			bodyTab.addEventListener('click', () => {
@@ -596,6 +634,18 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 			headersTab.addEventListener('click', () => {
 				showResponseTab('headers');
 			});
+
+				responseBodyContent.addEventListener('mousemove', (event) => {
+					updateScrollablePreHoverLine(responseBodyContent, responseBody, event);
+				});
+
+				responseBodyContent.addEventListener('mouseleave', () => {
+					clearHoverLine(responseBodyContent);
+				});
+
+				responseBodyContent.addEventListener('scroll', () => {
+					clearHoverLine(responseBodyContent);
+				});
 
 			form.addEventListener('submit', (event) => {
 				event.preventDefault();
@@ -691,6 +741,69 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 
 				function updateRequestTimer() {
 					responseTime.textContent = formatDuration(performance.now() - requestStartedAt);
+				}
+
+				function updateTextareaHoverLine(container, textEditor, event) {
+					const editorRect = textEditor.getBoundingClientRect();
+
+					if (event.clientY < editorRect.top || event.clientY > editorRect.bottom) {
+						clearHoverLine(container);
+						return;
+					}
+
+					const metrics = getTextMetrics(textEditor);
+					const y = event.clientY - editorRect.top + textEditor.scrollTop - metrics.paddingTop;
+
+					if (y < 0) {
+						clearHoverLine(container);
+						return;
+					}
+
+					const lineIndex = Math.floor(y / metrics.lineHeight);
+					const top = textEditor.offsetTop + metrics.paddingTop + (lineIndex * metrics.lineHeight) - textEditor.scrollTop;
+					setHoverLine(container, top, metrics.lineHeight);
+				}
+
+				function updateScrollablePreHoverLine(container, textEditor, event) {
+					const editorRect = textEditor.getBoundingClientRect();
+
+					if (event.clientY < editorRect.top || event.clientY > editorRect.bottom) {
+						clearHoverLine(container);
+						return;
+					}
+
+					const metrics = getTextMetrics(textEditor);
+					const y = event.clientY - editorRect.top - metrics.paddingTop;
+
+					if (y < 0) {
+						clearHoverLine(container);
+						return;
+					}
+
+					const lineIndex = Math.floor(y / metrics.lineHeight);
+					const top = textEditor.offsetTop + metrics.paddingTop + (lineIndex * metrics.lineHeight);
+					setHoverLine(container, top, metrics.lineHeight);
+				}
+
+				function setHoverLine(container, top, height) {
+					container.style.setProperty('--hover-line-top', top + 'px');
+					container.style.setProperty('--hover-line-height', height + 'px');
+					container.classList.add('line-hover');
+				}
+
+				function clearHoverLine(container) {
+					container.classList.remove('line-hover');
+				}
+
+				function getTextMetrics(element) {
+					const style = getComputedStyle(element);
+					const fontSize = parseFloat(style.fontSize);
+					const parsedLineHeight = parseFloat(style.lineHeight);
+
+					return {
+						lineHeight: Number.isFinite(parsedLineHeight) ? parsedLineHeight : fontSize * 1.45,
+						paddingTop: parseFloat(style.paddingTop) || 0,
+					};
 				}
 
 				function showRequestTab(tabName) {
