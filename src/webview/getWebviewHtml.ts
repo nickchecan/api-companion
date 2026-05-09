@@ -275,6 +275,15 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 				white-space: nowrap;
 			}
 
+			.response-time {
+				font-variant-numeric: tabular-nums;
+			}
+
+			.response-time:not(:empty)::after {
+				content: " | ";
+				color: var(--vscode-descriptionForeground);
+			}
+
 			.response-panel-content {
 				min-height: 320px;
 			}
@@ -417,7 +426,9 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 					<button class="response-tab active" id="body-tab" type="button" role="tab" aria-selected="true" aria-controls="body-panel">Body</button>
 					<button class="response-tab" id="headers-tab" type="button" role="tab" aria-selected="false" aria-controls="headers-panel">Headers</button>
 				</div>
-				<div class="response-status" id="response-status" aria-live="polite">No response yet.</div>
+				<div class="response-status" aria-live="polite">
+					<span class="response-time" id="response-time"></span><span id="response-status">No response yet.</span>
+				</div>
 			</div>
 			<div class="response-panel-content" id="body-panel" role="tabpanel" aria-labelledby="body-tab">
 				<div class="response-body-content">
@@ -456,9 +467,12 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 			const bodyPanel = document.getElementById('body-panel');
 			const headersPanel = document.getElementById('headers-panel');
 			const responseStatus = document.getElementById('response-status');
+			const responseTime = document.getElementById('response-time');
 			const responseHeaders = document.getElementById('response-headers');
 				const responseBodyLines = document.getElementById('response-body-lines');
 				const responseBody = document.getElementById('response-body');
+				let requestStartedAt = 0;
+				let requestTimer = undefined;
 				renderRequestParamsFromUrl();
 				renderRequestHeaders({});
 
@@ -535,6 +549,7 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 			form.addEventListener('submit', (event) => {
 				event.preventDefault();
 				send.disabled = true;
+				startRequestTimer();
 				responseStatus.textContent = 'Sending...';
 				responseHeaders.textContent = '(none)';
 				setBodyContent('(empty)');
@@ -550,14 +565,17 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 
 		window.addEventListener('message', (event) => {
 			const message = event.data;
-			send.disabled = false;
 
 			if (message.type === 'requestComplete') {
+				send.disabled = false;
+				stopRequestTimer();
 				renderResponse(message.response);
 				return;
 			}
 
 				if (message.type === 'requestError') {
+					send.disabled = false;
+					stopRequestTimer();
 					responseStatus.textContent = 'Request failed';
 					responseHeaders.textContent = '(none)';
 					setBodyContent(message.message);
@@ -584,6 +602,30 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 					responseStatus.textContent = 'Status: ' + result.status + ' ' + result.statusText;
 					responseHeaders.textContent = formatHeaders(result.headers);
 					setBodyContent(result.body || '(empty)');
+				}
+
+				function startRequestTimer() {
+					requestStartedAt = performance.now();
+					updateRequestTimer();
+
+					if (requestTimer !== undefined) {
+						clearInterval(requestTimer);
+					}
+
+					requestTimer = setInterval(updateRequestTimer, 100);
+				}
+
+				function stopRequestTimer() {
+					if (requestTimer !== undefined) {
+						clearInterval(requestTimer);
+						requestTimer = undefined;
+					}
+
+					updateRequestTimer();
+				}
+
+				function updateRequestTimer() {
+					responseTime.textContent = formatDuration(performance.now() - requestStartedAt);
 				}
 
 				function showRequestTab(tabName) {
@@ -814,6 +856,14 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 				.join('\\n');
 
 			return lines || '(none)';
+		}
+
+		function formatDuration(durationMs) {
+			if (durationMs < 1000) {
+				return Math.round(durationMs) + ' ms';
+			}
+
+			return (durationMs / 1000).toFixed(2) + ' s';
 		}
 
 		function formatBody(body) {
