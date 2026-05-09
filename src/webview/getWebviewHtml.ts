@@ -284,6 +284,27 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 				color: var(--vscode-descriptionForeground);
 			}
 
+			.response-status-badge {
+				display: inline-flex;
+				align-items: center;
+				min-height: 22px;
+				padding: 2px 8px;
+				border-radius: 999px;
+				box-sizing: border-box;
+				font-weight: 600;
+				line-height: 1.2;
+			}
+
+			.response-status-badge.success {
+				color: #ffffff;
+				background: #16825d;
+			}
+
+			.response-status-badge.error {
+				color: #ffffff;
+				background: #c73636;
+			}
+
 			.response-panel-content {
 				min-height: 320px;
 			}
@@ -427,7 +448,7 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 					<button class="response-tab" id="headers-tab" type="button" role="tab" aria-selected="false" aria-controls="headers-panel">Headers</button>
 				</div>
 				<div class="response-status" aria-live="polite">
-					<span class="response-time" id="response-time"></span><span id="response-status">No response yet.</span>
+					<span class="response-time" id="response-time"></span><span id="response-status" class="response-status-text">No response yet.</span>
 				</div>
 			</div>
 			<div class="response-panel-content" id="body-panel" role="tabpanel" aria-labelledby="body-tab">
@@ -550,7 +571,7 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 				event.preventDefault();
 				send.disabled = true;
 				startRequestTimer();
-				responseStatus.textContent = 'Sending...';
+				setResponseStatus('Sending...');
 				responseHeaders.textContent = '(none)';
 				setBodyContent('(empty)');
 
@@ -576,7 +597,7 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 				if (message.type === 'requestError') {
 					send.disabled = false;
 					stopRequestTimer();
-					responseStatus.textContent = 'Request failed';
+					setResponseStatus('Request failed', 'error');
 					responseHeaders.textContent = '(none)';
 					setBodyContent(message.message);
 					return;
@@ -599,9 +620,23 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 		});
 
 				function renderResponse(result) {
-					responseStatus.textContent = 'Status: ' + result.status + ' ' + result.statusText;
+					setResponseStatus(
+						'Status: ' + result.status + ' ' + result.statusText,
+						isSuccessStatus(result.status) ? 'success' : 'error',
+					);
 					responseHeaders.textContent = formatHeaders(result.headers);
 					setBodyContent(result.body || '(empty)');
+				}
+
+				function setResponseStatus(text, badgeType) {
+					responseStatus.textContent = text;
+					responseStatus.className = badgeType
+						? 'response-status-badge ' + badgeType
+						: 'response-status-text';
+				}
+
+				function isSuccessStatus(status) {
+					return status >= 200 && status < 300;
 				}
 
 				function startRequestTimer() {
