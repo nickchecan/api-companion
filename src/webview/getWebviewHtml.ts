@@ -68,6 +68,30 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 			opacity: 0.65;
 		}
 
+		.section-divider {
+			display: flex;
+			align-items: center;
+			gap: 12px;
+			margin: 18px 0 12px;
+			color: var(--vscode-descriptionForeground);
+			font-size: 11px;
+			font-weight: 700;
+			letter-spacing: 0;
+			line-height: 1;
+			text-transform: uppercase;
+		}
+
+		.section-divider::after {
+			content: "";
+			flex: 1;
+			height: 1px;
+			background: var(--vscode-panel-border);
+		}
+
+		.section-divider:first-of-type {
+			margin-top: 0;
+		}
+
 		.request-bar {
 			display: grid;
 			grid-template-columns: minmax(110px, 140px) minmax(180px, 1fr) auto;
@@ -232,8 +256,12 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 				outline-offset: -1px;
 			}
 
+			.response-divider {
+				margin-top: 22px;
+			}
+
 			.response-panel {
-				margin-top: 16px;
+				margin-top: 12px;
 				border: 1px solid var(--vscode-panel-border);
 				background: var(--vscode-editor-inactiveSelectionBackground);
 			}
@@ -383,6 +411,7 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 			<path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"></path>
 		</svg>
 	</h1>
+	<div class="section-divider">Request</div>
 	<form class="request-bar" id="request-form">
 		<label>
 			<span class="sr-only">HTTP method</span>
@@ -441,6 +470,7 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 				</div>
 			</div>
 		</section>
+		<div class="section-divider response-divider">Response</div>
 		<section class="response-panel" aria-label="Response area">
 			<div class="response-tabs">
 				<div class="response-tab-list" role="tablist" aria-label="Response sections">
