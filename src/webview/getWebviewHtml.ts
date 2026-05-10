@@ -246,6 +246,14 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 				min-width: 180px;
 			}
 
+			.request-body-toolbar-spacer {
+				flex: 1;
+			}
+
+			.request-body-beautify {
+				height: 28px;
+			}
+
 			.request-body-editor {
 				display: grid;
 				grid-template-columns: auto minmax(0, 1fr);
@@ -312,6 +320,11 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 			.request-body-input:disabled {
 				opacity: 0.65;
 				cursor: not-allowed;
+			}
+
+			.request-body-message {
+				margin-top: 8px;
+				color: var(--vscode-errorForeground);
 			}
 
 			.request-body-form {
@@ -546,11 +559,14 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 						<option value="html">HTML</option>
 						<option value="form">Form URL Encoded</option>
 					</select>
+					<span class="request-body-toolbar-spacer"></span>
+					<button class="request-body-beautify hidden" id="request-body-beautify" type="button">Beautify</button>
 				</div>
 				<div class="request-body-editor" id="request-body-editor">
 					<pre class="request-body-line-numbers" id="request-body-lines" aria-hidden="true">1</pre>
 					<textarea class="request-body-input" id="request-body" spellcheck="false" placeholder="{&#10;  &quot;example&quot;: true&#10;}"></textarea>
 				</div>
+				<div class="request-body-message hidden" id="request-body-message" aria-live="polite"></div>
 				<div class="request-body-form hidden" id="request-body-form">
 					<table class="request-headers-table" aria-label="Request form URL encoded body">
 						<thead>
@@ -612,6 +628,8 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 				const requestBodyFormTable = document.getElementById('request-body-form-table');
 				const addRequestBodyFormRow = document.getElementById('add-request-body-form-row');
 				const requestBodyType = document.getElementById('request-body-type');
+				const requestBodyBeautify = document.getElementById('request-body-beautify');
+				const requestBodyMessage = document.getElementById('request-body-message');
 				const requestBodyLines = document.getElementById('request-body-lines');
 				const requestBody = document.getElementById('request-body');
 				const bodyTab = document.getElementById('body-tab');
@@ -666,6 +684,7 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 				});
 
 				requestBodyType.addEventListener('change', () => {
+					clearRequestBodyMessage();
 					setRequestBodyContent('');
 					renderRequestBodyFormRows('');
 					applyRequestBodyType(requestBodyType.value);
@@ -684,6 +703,10 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 					addBodyFormRow('', '');
 				});
 
+				requestBodyBeautify.addEventListener('click', () => {
+					beautifyJsonRequestBody();
+				});
+
 				method.addEventListener('change', () => {
 					notifyRequestChanged();
 				});
@@ -694,6 +717,7 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 				});
 
 				requestBody.addEventListener('input', () => {
+					clearRequestBodyMessage();
 					updateRequestBodyLineNumbers();
 					notifyRequestChanged();
 				});
@@ -1188,6 +1212,7 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 
 					requestBodyEditor.classList.toggle('hidden', !hasTextBody);
 					requestBodyForm.classList.toggle('hidden', !hasFormBody);
+					requestBodyBeautify.classList.toggle('hidden', nextType !== 'json');
 					requestBody.disabled = !hasTextBody;
 					requestBody.placeholder = readBodyTypePlaceholder(nextType);
 
@@ -1268,6 +1293,26 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 					}
 
 					return requestBody.value;
+				}
+
+				function beautifyJsonRequestBody() {
+					try {
+						setRequestBodyContent(JSON.stringify(JSON.parse(requestBody.value), null, 2));
+						clearRequestBodyMessage();
+						notifyRequestChanged();
+					} catch {
+						setRequestBodyMessage('Invalid JSON body');
+					}
+				}
+
+				function setRequestBodyMessage(message) {
+					requestBodyMessage.textContent = message;
+					requestBodyMessage.classList.remove('hidden');
+				}
+
+				function clearRequestBodyMessage() {
+					requestBodyMessage.textContent = '';
+					requestBodyMessage.classList.add('hidden');
 				}
 
 				function setHeaderValue(name, value) {
