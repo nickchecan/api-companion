@@ -30,7 +30,7 @@
         "displayName": "API Companion Request",
         "selector": [
           {
-            "filenamePattern": "*.request.json"
+            "filenamePattern": "*.api.json"
           }
         ],
         "priority": "default"
