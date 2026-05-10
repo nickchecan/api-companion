@@ -278,6 +278,8 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 
 			.request-body-line-numbers {
 				margin: 0;
+				grid-column: 1;
+				grid-row: 1;
 				min-width: 44px;
 				padding: 12px 8px;
 				box-sizing: border-box;
@@ -295,8 +297,62 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 				z-index: 2;
 			}
 
+			.request-body-highlight {
+				display: block;
+				grid-column: 2;
+				grid-row: 1;
+				margin: 0;
+				width: 100%;
+				min-height: 140px;
+				padding: 12px;
+				box-sizing: border-box;
+				overflow: hidden;
+				white-space: pre-wrap;
+				overflow-wrap: anywhere;
+				color: var(--vscode-editor-foreground);
+				background: transparent;
+				border: 0;
+				font-family: var(--vscode-editor-font-family);
+				font-size: var(--vscode-editor-font-size);
+				line-height: 1.45;
+				pointer-events: none;
+				position: relative;
+				z-index: 2;
+			}
+
+			.request-body-editor:not(.json-highlight) .request-body-highlight {
+				display: none;
+			}
+
+			.json-highlight .request-body-input {
+				color: transparent;
+				caret-color: var(--vscode-editor-foreground);
+			}
+
+			.json-highlight .request-body-input::placeholder {
+				color: var(--vscode-input-placeholderForeground);
+			}
+
+			.json-token-key {
+				color: #7dd3fc;
+			}
+
+			.json-token-string {
+				color: #a7f3d0;
+			}
+
+			.json-token-number {
+				color: #fca5a5;
+			}
+
+			.json-token-literal {
+				color: #c4b5fd;
+			}
+
 			.request-body-input {
 				display: block;
+				grid-column: 2;
+				grid-row: 1;
 				width: 100%;
 				min-height: 140px;
 				padding: 12px;
@@ -564,6 +620,7 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 				</div>
 				<div class="request-body-editor" id="request-body-editor">
 					<pre class="request-body-line-numbers" id="request-body-lines" aria-hidden="true">1</pre>
+					<pre class="request-body-highlight" id="request-body-highlight" aria-hidden="true"></pre>
 					<textarea class="request-body-input" id="request-body" spellcheck="false" placeholder="{&#10;  &quot;example&quot;: true&#10;}"></textarea>
 				</div>
 				<div class="request-body-message hidden" id="request-body-message" aria-live="polite"></div>
@@ -630,6 +687,7 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 				const requestBodyType = document.getElementById('request-body-type');
 				const requestBodyBeautify = document.getElementById('request-body-beautify');
 				const requestBodyMessage = document.getElementById('request-body-message');
+				const requestBodyHighlight = document.getElementById('request-body-highlight');
 				const requestBodyLines = document.getElementById('request-body-lines');
 				const requestBody = document.getElementById('request-body');
 				const bodyTab = document.getElementById('body-tab');
@@ -719,11 +777,13 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 				requestBody.addEventListener('input', () => {
 					clearRequestBodyMessage();
 					updateRequestBodyLineNumbers();
+					updateRequestBodyHighlight();
 					notifyRequestChanged();
 				});
 
 				requestBody.addEventListener('scroll', () => {
 					requestBodyLines.scrollTop = requestBody.scrollTop;
+					requestBodyHighlight.scrollTop = requestBody.scrollTop;
 					clearHoverLine(requestBodyEditor);
 				});
 
@@ -815,7 +875,7 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 						isSuccessStatus(result.status) ? 'success' : 'error',
 					);
 					responseHeaders.textContent = formatHeaders(result.headers);
-					setBodyContent(result.body || '(empty)');
+					setBodyContent(result.body || '(empty)', hasJsonContentType(result.headers));
 				}
 
 				function setResponseStatus(text, badgeType) {
@@ -1213,8 +1273,10 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 					requestBodyEditor.classList.toggle('hidden', !hasTextBody);
 					requestBodyForm.classList.toggle('hidden', !hasFormBody);
 					requestBodyBeautify.classList.toggle('hidden', nextType !== 'json');
+					requestBodyEditor.classList.toggle('json-highlight', nextType === 'json');
 					requestBody.disabled = !hasTextBody;
 					requestBody.placeholder = readBodyTypePlaceholder(nextType);
+					updateRequestBodyHighlight();
 
 					if (hasFormBody && requestBodyFormTable.children.length === 0) {
 						renderRequestBodyFormRows(requestBody.value);
@@ -1498,15 +1560,75 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 				function setRequestBodyContent(content) {
 					requestBody.value = content;
 					updateRequestBodyLineNumbers();
+					updateRequestBodyHighlight();
 				}
 
 				function updateRequestBodyLineNumbers() {
 					requestBodyLines.textContent = formatLineNumbers(requestBody.value || ' ');
 				}
 
-			function setBodyContent(content) {
-				responseBody.textContent = content;
+				function updateRequestBodyHighlight() {
+					if (!requestBodyEditor.classList.contains('json-highlight')) {
+						requestBodyHighlight.textContent = '';
+						return;
+					}
+
+					requestBodyHighlight.innerHTML = formatJsonHighlight(requestBody.value || ' ');
+					requestBodyHighlight.scrollTop = requestBody.scrollTop;
+				}
+
+				function formatJsonHighlight(content) {
+					const tokenPattern = /("(?:\\\\.|[^"\\\\])*"\\s*:?)|\\b(true|false|null)\\b|-?\\d+(?:\\.\\d+)?(?:[eE][+-]?\\d+)?/g;
+					let result = '';
+					let lastIndex = 0;
+					let match = tokenPattern.exec(content);
+
+					while (match) {
+						const token = match[0];
+						const className = readJsonTokenClass(token);
+
+						result += escapeHtml(content.slice(lastIndex, match.index));
+						result += '<span class="' + className + '">' + escapeHtml(token) + '</span>';
+						lastIndex = match.index + token.length;
+						match = tokenPattern.exec(content);
+					}
+
+					result += escapeHtml(content.slice(lastIndex));
+
+					return result;
+				}
+
+				function readJsonTokenClass(token) {
+					if (token.startsWith('"')) {
+						return token.trimEnd().endsWith(':') ? 'json-token-key' : 'json-token-string';
+					}
+
+					if (token === 'true' || token === 'false' || token === 'null') {
+						return 'json-token-literal';
+					}
+
+					return 'json-token-number';
+				}
+
+				function escapeHtml(content) {
+					return content
+						.replace(/&/g, '&amp;')
+						.replace(/</g, '&lt;')
+						.replace(/>/g, '&gt;');
+				}
+
+			function setBodyContent(content, highlightJson) {
+				if (highlightJson) {
+					responseBody.innerHTML = formatJsonHighlight(content);
+				} else {
+					responseBody.textContent = content;
+				}
+
 				responseBodyLines.textContent = formatLineNumbers(content);
+			}
+
+			function hasJsonContentType(headers) {
+				return readHeaderValue(headers, 'Content-Type').toLowerCase().includes('json');
 			}
 
 			function formatLineNumbers(content) {

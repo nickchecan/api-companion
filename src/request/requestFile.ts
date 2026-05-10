@@ -24,7 +24,7 @@ export function parseRequestFile(content: string): RequestFileDefinition {
 }
 
 export function isRequestFileName(fileName: string): boolean {
-	return fileName.endsWith('.request.json');
+	return fileName.endsWith('.api.json');
 }
 
 function readRequiredString(value: Record<string, unknown>, property: string): string {
