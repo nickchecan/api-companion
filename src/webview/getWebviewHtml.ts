@@ -25,6 +25,73 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 			font-size: var(--vscode-font-size);
 		}
 
+		.request-title {
+			display: inline-flex;
+			align-items: center;
+			gap: 8px;
+			margin: 0 0 12px;
+			font-size: 20px;
+			font-weight: 600;
+			line-height: 1.3;
+			color: var(--vscode-editor-foreground);
+		}
+
+		.request-title-text {
+			cursor: text;
+		}
+
+		.request-title-input {
+			width: min(520px, 80vw);
+			height: auto;
+			padding: 0;
+			color: var(--vscode-editor-foreground);
+			background: transparent;
+			border: 0;
+			border-bottom: 1px solid var(--vscode-focusBorder);
+			font: inherit;
+		}
+
+		.request-title-input:focus {
+			outline: none;
+		}
+
+		.request-title-icon {
+			width: 16px;
+			height: 16px;
+			color: var(--vscode-descriptionForeground);
+			opacity: 0;
+			transition: opacity 120ms ease;
+		}
+
+		.request-title:hover .request-title-icon,
+		.request-title:focus-within .request-title-icon {
+			opacity: 0.65;
+		}
+
+		.section-divider {
+			display: flex;
+			align-items: center;
+			gap: 12px;
+			margin: 18px 0 12px;
+			color: var(--vscode-descriptionForeground);
+			font-size: 11px;
+			font-weight: 700;
+			letter-spacing: 0;
+			line-height: 1;
+			text-transform: uppercase;
+		}
+
+		.section-divider::after {
+			content: "";
+			flex: 1;
+			height: 1px;
+			background: var(--vscode-panel-border);
+		}
+
+		.section-divider:first-of-type {
+			margin-top: 0;
+		}
+
 		.request-bar {
 			display: grid;
 			grid-template-columns: minmax(110px, 140px) minmax(180px, 1fr) auto;
@@ -61,20 +128,408 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 			background: var(--vscode-button-hoverBackground);
 		}
 
-		button:disabled {
-			opacity: 0.7;
-			cursor: wait;
-		}
+			button:disabled {
+				opacity: 0.7;
+				cursor: wait;
+			}
 
-		.response {
-			min-height: 260px;
-			margin-top: 16px;
-			padding: 12px;
-			white-space: pre-wrap;
-			color: var(--vscode-editor-foreground);
-			background: var(--vscode-editor-inactiveSelectionBackground);
-			border: 1px solid var(--vscode-panel-border);
-		}
+			.request-panel {
+				margin-top: 16px;
+				border: 1px solid var(--vscode-panel-border);
+				background: var(--vscode-editor-inactiveSelectionBackground);
+			}
+
+			.request-tabs {
+				display: flex;
+				background: var(--vscode-sideBarSectionHeader-background);
+				border-bottom: 1px solid var(--vscode-panel-border);
+			}
+
+			.request-tab {
+				height: 34px;
+				color: var(--vscode-editor-foreground);
+				background: transparent;
+				border: 0;
+				border-right: 1px solid var(--vscode-panel-border);
+				padding: 0 14px;
+				cursor: pointer;
+			}
+
+			.request-tab:hover {
+				background: var(--vscode-list-hoverBackground);
+			}
+
+			.request-tab.active {
+				background: var(--vscode-editor-inactiveSelectionBackground);
+				box-shadow: inset 0 -2px 0 var(--vscode-focusBorder);
+			}
+
+			.request-panel-content {
+				padding: 12px;
+			}
+
+			.request-headers-table {
+				width: 100%;
+				border-collapse: collapse;
+			}
+
+			.request-headers-table th {
+				padding: 0 8px 8px 0;
+				text-align: left;
+				font-weight: 600;
+				color: var(--vscode-descriptionForeground);
+			}
+
+			.request-headers-table td {
+				padding: 0 8px 8px 0;
+			}
+
+			.request-headers-table .request-header-enabled-cell {
+				width: 1%;
+				vertical-align: middle;
+			}
+
+			.request-headers-table td:last-child,
+			.request-headers-table th:last-child {
+				width: 1%;
+				padding-right: 0;
+			}
+
+			.request-header-enabled {
+				width: 16px;
+				height: 16px;
+				margin: 0;
+				vertical-align: middle;
+			}
+
+			.request-header-disabled .request-header-input {
+				opacity: 0.65;
+			}
+
+			.request-header-input {
+				width: 100%;
+				min-width: 0;
+			}
+
+			.request-header-remove {
+				display: inline-flex;
+				align-items: center;
+				justify-content: center;
+				width: 32px;
+				padding: 0;
+			}
+
+			.request-header-remove svg {
+				width: 16px;
+				height: 16px;
+				pointer-events: none;
+			}
+
+			.request-header-add {
+				margin-top: 4px;
+			}
+
+			.request-body-toolbar {
+				display: flex;
+				align-items: center;
+				gap: 8px;
+				margin-bottom: 8px;
+				color: var(--vscode-descriptionForeground);
+			}
+
+			.request-body-type-label {
+				font-weight: 600;
+			}
+
+			.request-body-type {
+				width: auto;
+				min-width: 180px;
+			}
+
+			.request-body-toolbar-spacer {
+				flex: 1;
+			}
+
+			.request-body-beautify {
+				height: 28px;
+			}
+
+			.request-body-editor {
+				display: grid;
+				grid-template-columns: auto minmax(0, 1fr);
+				position: relative;
+				--hover-line-height: 0px;
+				--hover-line-top: 0px;
+				background: var(--vscode-editor-background);
+			}
+
+			.request-body-editor.line-hover::before,
+			.response-body-content.line-hover::before {
+				content: "";
+				position: absolute;
+				top: var(--hover-line-top);
+				left: 0;
+				right: 0;
+				height: var(--hover-line-height);
+				background: var(--vscode-editor-lineHighlightBackground, var(--vscode-list-hoverBackground));
+				pointer-events: none;
+				z-index: 1;
+			}
+
+			.request-body-line-numbers {
+				margin: 0;
+				grid-column: 1;
+				grid-row: 1;
+				min-width: 44px;
+				padding: 12px 8px;
+				box-sizing: border-box;
+				text-align: right;
+				user-select: none;
+				white-space: pre-wrap;
+				overflow: hidden;
+				color: var(--vscode-editorLineNumber-foreground);
+				background: var(--vscode-editorGutter-background);
+				border-right: 1px solid var(--vscode-panel-border);
+				font-family: var(--vscode-editor-font-family);
+				font-size: var(--vscode-editor-font-size);
+				line-height: 1.45;
+				position: relative;
+				z-index: 2;
+			}
+
+			.request-body-highlight {
+				display: block;
+				grid-column: 2;
+				grid-row: 1;
+				margin: 0;
+				width: 100%;
+				min-height: 140px;
+				padding: 12px;
+				box-sizing: border-box;
+				overflow: hidden;
+				white-space: pre-wrap;
+				overflow-wrap: anywhere;
+				color: var(--vscode-editor-foreground);
+				background: transparent;
+				border: 0;
+				font-family: var(--vscode-editor-font-family);
+				font-size: var(--vscode-editor-font-size);
+				line-height: 1.45;
+				pointer-events: none;
+				position: relative;
+				z-index: 2;
+			}
+
+			.request-body-editor:not(.json-highlight) .request-body-highlight {
+				display: none;
+			}
+
+			.json-highlight .request-body-input {
+				color: transparent;
+				caret-color: var(--vscode-editor-foreground);
+			}
+
+			.json-highlight .request-body-input::placeholder {
+				color: var(--vscode-input-placeholderForeground);
+			}
+
+			.json-token-key {
+				color: #7dd3fc;
+			}
+
+			.json-token-string {
+				color: #a7f3d0;
+			}
+
+			.json-token-number {
+				color: #fca5a5;
+			}
+
+			.json-token-literal {
+				color: #c4b5fd;
+			}
+
+			.request-body-input {
+				display: block;
+				grid-column: 2;
+				grid-row: 1;
+				width: 100%;
+				min-height: 140px;
+				padding: 12px;
+				box-sizing: border-box;
+				resize: vertical;
+				color: var(--vscode-editor-foreground);
+				background: transparent;
+				border: 0;
+				font-family: var(--vscode-editor-font-family);
+				font-size: var(--vscode-editor-font-size);
+				line-height: 1.45;
+				position: relative;
+				z-index: 2;
+			}
+
+			.request-body-input:focus {
+				outline: 1px solid var(--vscode-focusBorder);
+				outline-offset: -1px;
+			}
+
+			.request-body-input:disabled {
+				opacity: 0.65;
+				cursor: not-allowed;
+			}
+
+			.request-body-message {
+				margin-top: 8px;
+				color: var(--vscode-errorForeground);
+			}
+
+			.request-body-form {
+				background: transparent;
+			}
+
+			.response-divider {
+				margin-top: 22px;
+			}
+
+			.response-panel {
+				margin-top: 12px;
+				border: 1px solid var(--vscode-panel-border);
+				background: var(--vscode-editor-inactiveSelectionBackground);
+			}
+
+			.response-tabs {
+				display: flex;
+				align-items: center;
+				background: var(--vscode-sideBarSectionHeader-background);
+				border-bottom: 1px solid var(--vscode-panel-border);
+			}
+
+			.response-tab-list {
+				display: flex;
+			}
+
+			.response-tab {
+				height: 34px;
+				color: var(--vscode-editor-foreground);
+				background: transparent;
+				border: 0;
+				border-right: 1px solid var(--vscode-panel-border);
+				padding: 0 14px;
+				cursor: pointer;
+			}
+
+			.response-tab:hover {
+				background: var(--vscode-list-hoverBackground);
+			}
+
+			.response-tab.active {
+				background: var(--vscode-editor-inactiveSelectionBackground);
+				box-shadow: inset 0 -2px 0 var(--vscode-focusBorder);
+			}
+
+			.response-status {
+				margin-left: auto;
+				padding: 0 12px;
+				color: var(--vscode-descriptionForeground);
+				white-space: nowrap;
+			}
+
+			.response-time,
+			.response-size {
+				font-variant-numeric: tabular-nums;
+			}
+
+			.response-time:not(:empty)::after,
+			.response-size:not(:empty)::after {
+				content: " | ";
+				color: var(--vscode-descriptionForeground);
+			}
+
+			.response-status-badge {
+				display: inline-flex;
+				align-items: center;
+				min-height: 22px;
+				padding: 2px 8px;
+				border-radius: 999px;
+				box-sizing: border-box;
+				font-weight: 600;
+				line-height: 1.2;
+			}
+
+			.response-status-badge.success {
+				color: #ffffff;
+				background: #16825d;
+			}
+
+			.response-status-badge.error {
+				color: #ffffff;
+				background: #c73636;
+			}
+
+			.response-panel-content {
+				min-height: 320px;
+			}
+
+			.response-content,
+			.response-line-numbers {
+				margin: 0;
+				box-sizing: border-box;
+				white-space: pre-wrap;
+				font-family: var(--vscode-editor-font-family);
+				font-size: var(--vscode-editor-font-size);
+				line-height: 1.45;
+			}
+
+			.response-content {
+				padding: 12px;
+				color: var(--vscode-editor-foreground);
+			}
+
+			.response-body-content {
+				display: grid;
+				grid-template-columns: auto minmax(0, 1fr);
+				max-height: 48vh;
+				overflow: auto;
+				position: relative;
+				--hover-line-height: 0px;
+				--hover-line-top: 0px;
+				background: var(--vscode-editor-background);
+				cursor: text;
+			}
+
+			.response-line-numbers {
+				min-width: 44px;
+				padding: 12px 8px;
+				text-align: right;
+				user-select: none;
+				color: var(--vscode-editorLineNumber-foreground);
+				background: var(--vscode-editorGutter-background);
+				border-right: 1px solid var(--vscode-panel-border);
+				position: relative;
+				z-index: 2;
+			}
+
+			.response-body-content .response-content {
+				min-width: 0;
+				overflow: visible;
+				background: transparent;
+				cursor: text;
+				user-select: text;
+				position: relative;
+				z-index: 2;
+			}
+
+			.response-preview {
+				width: 100%;
+				min-height: 320px;
+				border: 0;
+				background: #ffffff;
+				pointer-events: none;
+			}
+
+			.hidden {
+				display: none;
+			}
 
 		.sr-only {
 			position: absolute;
@@ -96,6 +551,15 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 	</style>
 </head>
 <body>
+	<h1 class="request-title" id="request-title-container">
+		<span class="request-title-text" id="request-title">API Companion Request</span>
+		<input class="request-title-input hidden" id="request-title-input" aria-label="Request title">
+		<svg class="request-title-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+			<path d="M12 20h9"></path>
+			<path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"></path>
+		</svg>
+	</h1>
+	<div class="section-divider">Request</div>
 	<form class="request-bar" id="request-form">
 		<label>
 			<span class="sr-only">HTTP method</span>
@@ -114,67 +578,1176 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 			<input id="url" name="url" type="url" placeholder="https://api.example.com/resource" aria-label="Request URL">
 		</label>
 		<button id="send" type="submit">Send</button>
-	</form>
-	<section class="response" id="response" aria-label="Response area"></section>
+		</form>
+		<section class="request-panel" aria-label="Request configuration area">
+			<div class="request-tabs" role="tablist" aria-label="Request sections">
+				<button class="request-tab active" id="request-params-tab" type="button" role="tab" aria-selected="true" aria-controls="request-params-panel">Params</button>
+				<button class="request-tab" id="request-headers-tab" type="button" role="tab" aria-selected="false" aria-controls="request-headers-panel">Headers</button>
+				<button class="request-tab" id="request-body-tab" type="button" role="tab" aria-selected="false" aria-controls="request-body-panel">Body</button>
+			</div>
+			<div class="request-panel-content" id="request-params-panel" role="tabpanel" aria-labelledby="request-params-tab">
+				<table class="request-headers-table" aria-label="Request query parameters">
+					<thead>
+						<tr>
+							<th scope="col"><span class="sr-only">Enabled</span></th>
+							<th scope="col">Key</th>
+							<th scope="col">Value</th>
+							<th scope="col"><span class="sr-only">Actions</span></th>
+						</tr>
+					</thead>
+					<tbody id="request-params-table"></tbody>
+				</table>
+				<button class="request-header-add" id="add-request-param" type="button">Add Param</button>
+			</div>
+			<div class="request-panel-content hidden" id="request-headers-panel" role="tabpanel" aria-labelledby="request-headers-tab">
+				<table class="request-headers-table" aria-label="Request headers">
+					<thead>
+						<tr>
+							<th scope="col"><span class="sr-only">Enabled</span></th>
+							<th scope="col">Key</th>
+							<th scope="col">Value</th>
+							<th scope="col"><span class="sr-only">Actions</span></th>
+						</tr>
+					</thead>
+					<tbody id="request-headers-table"></tbody>
+				</table>
+				<button class="request-header-add" id="add-request-header" type="button">Add Header</button>
+			</div>
+			<div class="request-panel-content hidden" id="request-body-panel" role="tabpanel" aria-labelledby="request-body-tab">
+				<div class="request-body-toolbar">
+					<label class="request-body-type-label" for="request-body-type">Type</label>
+					<select class="request-body-type" id="request-body-type">
+						<option value="none">None</option>
+						<option value="raw" selected>Raw</option>
+						<option value="json">JSON</option>
+						<option value="text">Text</option>
+						<option value="xml">XML</option>
+						<option value="html">HTML</option>
+						<option value="form">Form URL Encoded</option>
+					</select>
+					<span class="request-body-toolbar-spacer"></span>
+					<button class="request-body-beautify hidden" id="request-body-beautify" type="button">Beautify</button>
+				</div>
+				<div class="request-body-editor" id="request-body-editor">
+					<pre class="request-body-line-numbers" id="request-body-lines" aria-hidden="true">1</pre>
+					<pre class="request-body-highlight" id="request-body-highlight" aria-hidden="true"></pre>
+					<textarea class="request-body-input" id="request-body" spellcheck="false" placeholder="{&#10;  &quot;example&quot;: true&#10;}"></textarea>
+				</div>
+				<div class="request-body-message hidden" id="request-body-message" aria-live="polite"></div>
+				<div class="request-body-form hidden" id="request-body-form">
+					<table class="request-headers-table" aria-label="Request form URL encoded body">
+						<thead>
+							<tr>
+								<th scope="col">Key</th>
+								<th scope="col">Value</th>
+								<th scope="col"><span class="sr-only">Actions</span></th>
+							</tr>
+						</thead>
+						<tbody id="request-body-form-table"></tbody>
+					</table>
+					<button class="request-header-add" id="add-request-body-form-row" type="button">Add Pair</button>
+				</div>
+			</div>
+		</section>
+		<div class="section-divider response-divider">Response</div>
+		<section class="response-panel" aria-label="Response area">
+			<div class="response-tabs">
+				<div class="response-tab-list" role="tablist" aria-label="Response sections">
+					<button class="response-tab active" id="body-tab" type="button" role="tab" aria-selected="true" aria-controls="body-panel">Body</button>
+					<button class="response-tab" id="headers-tab" type="button" role="tab" aria-selected="false" aria-controls="headers-panel">Headers</button>
+					<button class="response-tab" id="preview-tab" type="button" role="tab" aria-selected="false" aria-controls="preview-panel">Preview</button>
+				</div>
+				<div class="response-status" aria-live="polite">
+					<span class="response-time" id="response-time"></span><span class="response-size" id="response-size"></span><span id="response-status" class="response-status-text">No response yet.</span>
+				</div>
+			</div>
+			<div class="response-panel-content" id="body-panel" role="tabpanel" aria-labelledby="body-tab">
+				<div class="response-body-content" id="response-body-content">
+					<pre class="response-line-numbers" id="response-body-lines" aria-hidden="true">1</pre>
+					<pre class="response-content" id="response-body">(empty)</pre>
+				</div>
+			</div>
+			<div class="response-panel-content hidden" id="headers-panel" role="tabpanel" aria-labelledby="headers-tab">
+				<pre class="response-content" id="response-headers">(none)</pre>
+			</div>
+			<div class="response-panel-content hidden" id="preview-panel" role="tabpanel" aria-labelledby="preview-tab">
+				<iframe class="response-preview hidden" id="response-preview" sandbox="" title="HTML response preview"></iframe>
+				<pre class="response-content" id="response-preview-empty">HTML preview is available for HTML responses.</pre>
+			</div>
+		</section>
 
 	<script nonce="${nonce}">
-		const vscode = acquireVsCodeApi();
-		const form = document.getElementById('request-form');
-		const method = document.getElementById('method');
-		const url = document.getElementById('url');
-		const send = document.getElementById('send');
-		const response = document.getElementById('response');
-		let loadedHeaders = {};
+			const vscode = acquireVsCodeApi();
+			const form = document.getElementById('request-form');
+			const requestTitleContainer = document.getElementById('request-title-container');
+			const requestTitle = document.getElementById('request-title');
+			const requestTitleInput = document.getElementById('request-title-input');
+				const method = document.getElementById('method');
+				const url = document.getElementById('url');
+				const send = document.getElementById('send');
+				const requestParamsTab = document.getElementById('request-params-tab');
+				const requestHeadersTab = document.getElementById('request-headers-tab');
+				const requestBodyTab = document.getElementById('request-body-tab');
+				const requestParamsPanel = document.getElementById('request-params-panel');
+				const requestHeadersPanel = document.getElementById('request-headers-panel');
+				const requestBodyPanel = document.getElementById('request-body-panel');
+				const requestParamsTable = document.getElementById('request-params-table');
+				const requestHeadersTable = document.getElementById('request-headers-table');
+				const addRequestParam = document.getElementById('add-request-param');
+				const addRequestHeader = document.getElementById('add-request-header');
+				const requestBodyEditor = document.getElementById('request-body-editor');
+				const requestBodyForm = document.getElementById('request-body-form');
+				const requestBodyFormTable = document.getElementById('request-body-form-table');
+				const addRequestBodyFormRow = document.getElementById('add-request-body-form-row');
+				const requestBodyType = document.getElementById('request-body-type');
+				const requestBodyBeautify = document.getElementById('request-body-beautify');
+				const requestBodyMessage = document.getElementById('request-body-message');
+				const requestBodyHighlight = document.getElementById('request-body-highlight');
+				const requestBodyLines = document.getElementById('request-body-lines');
+				const requestBody = document.getElementById('request-body');
+				const bodyTab = document.getElementById('body-tab');
+				const headersTab = document.getElementById('headers-tab');
+				const previewTab = document.getElementById('preview-tab');
+			const bodyPanel = document.getElementById('body-panel');
+			const headersPanel = document.getElementById('headers-panel');
+			const previewPanel = document.getElementById('preview-panel');
+			const responseStatus = document.getElementById('response-status');
+			const responseTime = document.getElementById('response-time');
+			const responseSize = document.getElementById('response-size');
+			const responseHeaders = document.getElementById('response-headers');
+			const responsePreview = document.getElementById('response-preview');
+			const responsePreviewEmpty = document.getElementById('response-preview-empty');
+				const responseBodyContent = document.getElementById('response-body-content');
+				const responseBodyLines = document.getElementById('response-body-lines');
+				const responseBody = document.getElementById('response-body');
+				let requestStartedAt = 0;
+				let requestTimer = undefined;
+				let latestRequestUrl = '';
+				renderRequestParamsFromUrl();
+				renderRequestHeaders({});
 
-		form.addEventListener('submit', (event) => {
-			event.preventDefault();
-			send.disabled = true;
-			response.textContent = 'Sending...';
+				requestTitleContainer.addEventListener('click', (event) => {
+					if (event.target === requestTitleInput) {
+						return;
+					}
+
+					startTitleEdit();
+				});
+
+				requestTitleInput.addEventListener('keydown', (event) => {
+					if (event.key === 'Enter') {
+						event.preventDefault();
+						commitTitleEdit();
+					}
+
+					if (event.key === 'Escape') {
+						event.preventDefault();
+						cancelTitleEdit();
+					}
+				});
+
+				requestTitleInput.addEventListener('blur', () => {
+					commitTitleEdit();
+				});
+
+				requestParamsTab.addEventListener('click', () => {
+					showRequestTab('params');
+				});
+
+				requestHeadersTab.addEventListener('click', () => {
+					showRequestTab('headers');
+				});
+
+				requestBodyTab.addEventListener('click', () => {
+					showRequestTab('body');
+				});
+
+				requestBodyType.addEventListener('change', () => {
+					clearRequestBodyMessage();
+					setRequestBodyContent('');
+					renderRequestBodyFormRows('');
+					applyRequestBodyType(requestBodyType.value);
+					notifyRequestChanged();
+				});
+
+				addRequestParam.addEventListener('click', () => {
+					addRequestParamRow('', '');
+				});
+
+				addRequestHeader.addEventListener('click', () => {
+					addRequestHeaderRow('', '');
+				});
+
+				addRequestBodyFormRow.addEventListener('click', () => {
+					addBodyFormRow('', '');
+				});
+
+				requestBodyBeautify.addEventListener('click', () => {
+					beautifyJsonRequestBody();
+				});
+
+				method.addEventListener('change', () => {
+					notifyRequestChanged();
+				});
+
+				url.addEventListener('input', () => {
+					renderRequestParamsFromUrl();
+					notifyRequestChanged();
+				});
+
+				requestBody.addEventListener('input', () => {
+					clearRequestBodyMessage();
+					updateRequestBodyLineNumbers();
+					updateRequestBodyHighlight();
+					notifyRequestChanged();
+				});
+
+				requestBody.addEventListener('scroll', () => {
+					requestBodyLines.scrollTop = requestBody.scrollTop;
+					requestBodyHighlight.scrollTop = requestBody.scrollTop;
+					clearHoverLine(requestBodyEditor);
+				});
+
+				requestBody.addEventListener('mousemove', (event) => {
+					updateTextareaHoverLine(requestBodyEditor, requestBody, event);
+				});
+
+				requestBody.addEventListener('mouseleave', () => {
+					clearHoverLine(requestBodyEditor);
+				});
+
+			bodyTab.addEventListener('click', () => {
+				showResponseTab('body');
+			});
+
+			headersTab.addEventListener('click', () => {
+				showResponseTab('headers');
+			});
+
+			previewTab.addEventListener('click', () => {
+				showResponseTab('preview');
+			});
+
+				responseBodyContent.addEventListener('mousemove', (event) => {
+					updateScrollablePreHoverLine(responseBodyContent, responseBody, event);
+				});
+
+				responseBodyContent.addEventListener('mouseleave', () => {
+					clearHoverLine(responseBodyContent);
+				});
+
+				responseBodyContent.addEventListener('scroll', () => {
+					clearHoverLine(responseBodyContent);
+				});
+
+			form.addEventListener('submit', (event) => {
+				event.preventDefault();
+				latestRequestUrl = readEnabledRequestUrl();
+				send.disabled = true;
+				startRequestTimer();
+				setResponseStatus('Sending...');
+				responseSize.textContent = '';
+				responseHeaders.textContent = '(none)';
+				setBodyContent('(empty)');
+				setPreviewContent('', false, latestRequestUrl);
 
 			vscode.postMessage({
-				type: 'sendRequest',
-				method: method.value,
-				url: url.value,
-				headers: loadedHeaders,
-			});
+						type: 'sendRequest',
+						method: method.value,
+						url: latestRequestUrl,
+						headers: readEnabledRequestHeaders(),
+						body: readRequestBodyForSend(),
+					});
 		});
 
 		window.addEventListener('message', (event) => {
 			const message = event.data;
-			send.disabled = false;
 
 			if (message.type === 'requestComplete') {
-				response.textContent = formatResponse(message.response);
+				send.disabled = false;
+				stopRequestTimer();
+				renderResponse(message.response);
 				return;
 			}
 
-			if (message.type === 'requestError') {
-				response.textContent = 'Request failed\\n\\n' + message.message;
-				return;
-			}
+				if (message.type === 'requestError') {
+					send.disabled = false;
+					stopRequestTimer();
+					setResponseStatus('Request failed', 'error');
+					responseSize.textContent = '';
+					responseHeaders.textContent = '(none)';
+					setBodyContent(message.message);
+					setPreviewContent('', false, latestRequestUrl);
+					return;
+				}
 
-			if (message.type === 'loadRequest') {
-				method.value = message.request.method;
-				url.value = message.request.url;
-				loadedHeaders = message.request.headers || {};
-				response.textContent = 'Loaded request: ' + message.request.name;
-			}
+				if (message.type === 'loadRequest') {
+						setRequestTitle(message.request.name);
+						method.value = message.request.method;
+						url.value = message.request.url;
+						renderRequestParamsFromUrl();
+						renderRequestHeaders(message.request.headers || {});
+						setRequestBodyContent(message.request.body === null || message.request.body === undefined
+							? ''
+							: formatBody(message.request.body));
+						renderRequestBodyFormRows(requestBody.value);
+						setRequestBodyType(inferRequestBodyType(message.request.headers || {}, requestBody.value));
+				}
+			});
+
+		vscode.postMessage({
+			type: 'webviewReady',
 		});
 
-		function formatResponse(result) {
-			const headers = Object.entries(result.headers)
+				function renderResponse(result) {
+					setResponseStatus(
+						'Status: ' + result.status + ' ' + result.statusText,
+						isSuccessStatus(result.status) ? 'success' : 'error',
+					);
+					responseSize.textContent = formatResponseSize(result.body || '');
+					responseHeaders.textContent = formatHeaders(result.headers);
+					setBodyContent(result.body || '(empty)', hasJsonContentType(result.headers));
+					setPreviewContent(result.body || '', hasHtmlContentType(result.headers), latestRequestUrl);
+				}
+
+				function setResponseStatus(text, badgeType) {
+					responseStatus.textContent = text;
+					responseStatus.className = badgeType
+						? 'response-status-badge ' + badgeType
+						: 'response-status-text';
+				}
+
+				function isSuccessStatus(status) {
+					return status >= 200 && status < 300;
+				}
+
+				function startRequestTimer() {
+					requestStartedAt = performance.now();
+					updateRequestTimer();
+
+					if (requestTimer !== undefined) {
+						clearInterval(requestTimer);
+					}
+
+					requestTimer = setInterval(updateRequestTimer, 100);
+				}
+
+				function stopRequestTimer() {
+					if (requestTimer !== undefined) {
+						clearInterval(requestTimer);
+						requestTimer = undefined;
+					}
+
+					updateRequestTimer();
+				}
+
+				function updateRequestTimer() {
+					responseTime.textContent = formatDuration(performance.now() - requestStartedAt);
+				}
+
+				function updateTextareaHoverLine(container, textEditor, event) {
+					const editorRect = textEditor.getBoundingClientRect();
+
+					if (event.clientY < editorRect.top || event.clientY > editorRect.bottom) {
+						clearHoverLine(container);
+						return;
+					}
+
+					const metrics = getTextMetrics(textEditor);
+					const y = event.clientY - editorRect.top + textEditor.scrollTop - metrics.paddingTop;
+
+					if (y < 0) {
+						clearHoverLine(container);
+						return;
+					}
+
+					const lineIndex = Math.floor(y / metrics.lineHeight);
+					const top = textEditor.offsetTop + metrics.paddingTop + (lineIndex * metrics.lineHeight) - textEditor.scrollTop;
+					setHoverLine(container, top, metrics.lineHeight);
+				}
+
+				function updateScrollablePreHoverLine(container, textEditor, event) {
+					const editorRect = textEditor.getBoundingClientRect();
+
+					if (event.clientY < editorRect.top || event.clientY > editorRect.bottom) {
+						clearHoverLine(container);
+						return;
+					}
+
+					const metrics = getTextMetrics(textEditor);
+					const y = event.clientY - editorRect.top - metrics.paddingTop;
+
+					if (y < 0) {
+						clearHoverLine(container);
+						return;
+					}
+
+					const lineIndex = Math.floor(y / metrics.lineHeight);
+					const top = textEditor.offsetTop + metrics.paddingTop + (lineIndex * metrics.lineHeight);
+					setHoverLine(container, top, metrics.lineHeight);
+				}
+
+				function setHoverLine(container, top, height) {
+					container.style.setProperty('--hover-line-top', top + 'px');
+					container.style.setProperty('--hover-line-height', height + 'px');
+					container.classList.add('line-hover');
+				}
+
+				function clearHoverLine(container) {
+					container.classList.remove('line-hover');
+				}
+
+				function getTextMetrics(element) {
+					const style = getComputedStyle(element);
+					const fontSize = parseFloat(style.fontSize);
+					const parsedLineHeight = parseFloat(style.lineHeight);
+
+					return {
+						lineHeight: Number.isFinite(parsedLineHeight) ? parsedLineHeight : fontSize * 1.45,
+						paddingTop: parseFloat(style.paddingTop) || 0,
+					};
+				}
+
+				function showRequestTab(tabName) {
+					const showParams = tabName === 'params';
+					const showHeaders = tabName === 'headers';
+					const showBody = tabName === 'body';
+
+					requestParamsTab.classList.toggle('active', showParams);
+					requestHeadersTab.classList.toggle('active', showHeaders);
+					requestBodyTab.classList.toggle('active', showBody);
+					requestParamsTab.setAttribute('aria-selected', String(showParams));
+					requestHeadersTab.setAttribute('aria-selected', String(showHeaders));
+					requestBodyTab.setAttribute('aria-selected', String(showBody));
+					requestParamsPanel.classList.toggle('hidden', !showParams);
+					requestHeadersPanel.classList.toggle('hidden', !showHeaders);
+					requestBodyPanel.classList.toggle('hidden', !showBody);
+				}
+
+				function showResponseTab(tabName) {
+					const showBody = tabName === 'body';
+					const showHeaders = tabName === 'headers';
+					const showPreview = tabName === 'preview';
+
+				bodyTab.classList.toggle('active', showBody);
+				headersTab.classList.toggle('active', showHeaders);
+				previewTab.classList.toggle('active', showPreview);
+				bodyTab.setAttribute('aria-selected', String(showBody));
+				headersTab.setAttribute('aria-selected', String(showHeaders));
+				previewTab.setAttribute('aria-selected', String(showPreview));
+					bodyPanel.classList.toggle('hidden', !showBody);
+					headersPanel.classList.toggle('hidden', !showHeaders);
+					previewPanel.classList.toggle('hidden', !showPreview);
+				}
+
+				function renderRequestParamsFromUrl() {
+					requestParamsTable.textContent = '';
+
+					const entries = readParamsFromUrl();
+
+					if (entries.length === 0) {
+						addRequestParamRow('', '');
+						return;
+					}
+
+					for (const [name, value] of entries) {
+						addRequestParamRow(name, value);
+					}
+				}
+
+				function renderRequestHeaders(headers) {
+					requestHeadersTable.textContent = '';
+					const entries = Object.entries(headers);
+
+					if (entries.length === 0) {
+						addRequestHeaderRow('', '');
+						return;
+					}
+
+					for (const [name, value] of entries) {
+						addRequestHeaderRow(name, value);
+					}
+				}
+
+				function addRequestParamRow(name, value) {
+					addParamRow(name, value, true);
+				}
+
+				function addRequestHeaderRow(name, value) {
+					addHeaderRow(name, value, true);
+				}
+
+				function addParamRow(name, value, enabled) {
+					const row = document.createElement('tr');
+					const enabledCell = document.createElement('td');
+					const nameCell = document.createElement('td');
+					const valueCell = document.createElement('td');
+					const actionCell = document.createElement('td');
+					const enabledInput = document.createElement('input');
+					const nameInput = document.createElement('input');
+					const valueInput = document.createElement('input');
+					const removeButton = document.createElement('button');
+
+					enabledCell.className = 'request-header-enabled-cell';
+					enabledInput.className = 'request-header-enabled';
+					enabledInput.type = 'checkbox';
+					enabledInput.checked = enabled;
+					enabledInput.ariaLabel = 'Include param';
+					nameInput.className = 'request-header-input';
+					nameInput.placeholder = 'Param name';
+					nameInput.value = name;
+					valueInput.className = 'request-header-input';
+					valueInput.placeholder = 'Param value';
+					valueInput.value = value;
+					removeButton.className = 'request-header-remove';
+					removeButton.type = 'button';
+					removeButton.ariaLabel = 'Remove param';
+					removeButton.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>';
+					updateRequestRowEnabledState(row, enabledInput.checked);
+
+					enabledInput.addEventListener('change', () => {
+						updateRequestRowEnabledState(row, enabledInput.checked);
+						updateUrlFromParams();
+						notifyRequestChanged();
+					});
+					nameInput.addEventListener('input', () => {
+						updateUrlFromParams();
+						notifyRequestChanged();
+					});
+					valueInput.addEventListener('input', () => {
+						updateUrlFromParams();
+						notifyRequestChanged();
+					});
+					removeButton.addEventListener('click', () => {
+						row.remove();
+
+						if (requestParamsTable.children.length === 0) {
+							addParamRow('', '', true);
+						}
+
+						updateUrlFromParams();
+						notifyRequestChanged();
+					});
+
+					enabledCell.append(enabledInput);
+					nameCell.append(nameInput);
+					valueCell.append(valueInput);
+					actionCell.append(removeButton);
+					row.append(enabledCell, nameCell, valueCell, actionCell);
+					requestParamsTable.append(row);
+				}
+
+				function addHeaderRow(name, value, enabled) {
+					const row = document.createElement('tr');
+					const enabledCell = document.createElement('td');
+					const nameCell = document.createElement('td');
+					const valueCell = document.createElement('td');
+					const actionCell = document.createElement('td');
+					const enabledInput = document.createElement('input');
+					const nameInput = document.createElement('input');
+					const valueInput = document.createElement('input');
+					const removeButton = document.createElement('button');
+
+					enabledCell.className = 'request-header-enabled-cell';
+					enabledInput.className = 'request-header-enabled';
+					enabledInput.type = 'checkbox';
+					enabledInput.checked = enabled;
+					enabledInput.ariaLabel = 'Include header';
+					nameInput.className = 'request-header-input';
+					nameInput.placeholder = 'Header name';
+					nameInput.value = name;
+					valueInput.className = 'request-header-input';
+					valueInput.placeholder = 'Header value';
+					valueInput.value = value;
+					removeButton.className = 'request-header-remove';
+					removeButton.type = 'button';
+					removeButton.ariaLabel = 'Remove header';
+					removeButton.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>';
+					updateRequestRowEnabledState(row, enabledInput.checked);
+
+					enabledInput.addEventListener('change', () => {
+						updateRequestRowEnabledState(row, enabledInput.checked);
+						notifyRequestChanged();
+					});
+					nameInput.addEventListener('input', () => {
+						notifyRequestChanged();
+					});
+					valueInput.addEventListener('input', () => {
+						notifyRequestChanged();
+					});
+					removeButton.addEventListener('click', () => {
+						row.remove();
+
+						if (requestHeadersTable.children.length === 0) {
+							addHeaderRow('', '', true);
+						}
+
+						notifyRequestChanged();
+					});
+
+					enabledCell.append(enabledInput);
+					nameCell.append(nameInput);
+					valueCell.append(valueInput);
+					actionCell.append(removeButton);
+					row.append(enabledCell, nameCell, valueCell, actionCell);
+					requestHeadersTable.append(row);
+				}
+
+				function renderRequestBodyFormRows(body) {
+					requestBodyFormTable.textContent = '';
+
+					const entries = readBodyFormEntries(body);
+
+					if (entries.length === 0) {
+						addBodyFormRow('', '');
+						return;
+					}
+
+					for (const [name, value] of entries) {
+						addBodyFormRow(name, value);
+					}
+				}
+
+				function addBodyFormRow(name, value) {
+					const row = document.createElement('tr');
+					const nameCell = document.createElement('td');
+					const valueCell = document.createElement('td');
+					const actionCell = document.createElement('td');
+					const nameInput = document.createElement('input');
+					const valueInput = document.createElement('input');
+					const removeButton = document.createElement('button');
+
+					nameInput.className = 'request-header-input';
+					nameInput.placeholder = 'Field name';
+					nameInput.value = name;
+					valueInput.className = 'request-header-input';
+					valueInput.placeholder = 'Field value';
+					valueInput.value = value;
+					removeButton.className = 'request-header-remove';
+					removeButton.type = 'button';
+					removeButton.ariaLabel = 'Remove form pair';
+					removeButton.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>';
+
+					nameInput.addEventListener('input', () => {
+						syncRequestBodyFromFormRows();
+						notifyRequestChanged();
+					});
+					valueInput.addEventListener('input', () => {
+						syncRequestBodyFromFormRows();
+						notifyRequestChanged();
+					});
+					removeButton.addEventListener('click', () => {
+						row.remove();
+
+						if (requestBodyFormTable.children.length === 0) {
+							addBodyFormRow('', '');
+						}
+
+						syncRequestBodyFromFormRows();
+						notifyRequestChanged();
+					});
+
+					nameCell.append(nameInput);
+					valueCell.append(valueInput);
+					actionCell.append(removeButton);
+					row.append(nameCell, valueCell, actionCell);
+					requestBodyFormTable.append(row);
+				}
+
+				function syncRequestBodyFromFormRows() {
+					requestBody.value = readBodyFormValue();
+					updateRequestBodyLineNumbers();
+				}
+
+				function readBodyFormValue() {
+					const params = new URLSearchParams();
+
+					for (const [name, value] of readBodyFormRows()) {
+						params.append(name, value);
+					}
+
+					return params.toString();
+				}
+
+				function readBodyFormRows() {
+					const values = [];
+
+					for (const row of requestBodyFormTable.querySelectorAll('tr')) {
+						const inputs = row.querySelectorAll('.request-header-input');
+						const name = inputs[0].value.trim();
+
+						if (name) {
+							values.push([name, inputs[1].value]);
+						}
+					}
+
+					return values;
+				}
+
+				function readBodyFormEntries(body) {
+					const entries = [];
+
+					for (const [name, value] of new URLSearchParams(body).entries()) {
+						entries.push([name, value]);
+					}
+
+					return entries;
+				}
+
+				function updateRequestRowEnabledState(row, enabled) {
+					row.classList.toggle('request-header-disabled', !enabled);
+				}
+
+				function setRequestBodyType(nextType) {
+					requestBodyType.value = nextType;
+					applyRequestBodyType(nextType);
+				}
+
+				function applyRequestBodyType(nextType) {
+					const hasTextBody = nextType !== 'none' && nextType !== 'form';
+					const hasFormBody = nextType === 'form';
+
+					requestBodyEditor.classList.toggle('hidden', !hasTextBody);
+					requestBodyForm.classList.toggle('hidden', !hasFormBody);
+					requestBodyBeautify.classList.toggle('hidden', nextType !== 'json');
+					requestBodyEditor.classList.toggle('json-highlight', nextType === 'json');
+					requestBody.disabled = !hasTextBody;
+					requestBody.placeholder = readBodyTypePlaceholder(nextType);
+					updateRequestBodyHighlight();
+
+					if (hasFormBody && requestBodyFormTable.children.length === 0) {
+						renderRequestBodyFormRows(requestBody.value);
+					}
+
+					const contentType = readBodyTypeContentType(nextType);
+
+					if (contentType) {
+						setHeaderValue('Content-Type', contentType);
+					} else if (nextType === 'none') {
+						removeHeaderValue('Content-Type');
+					}
+				}
+
+				function readBodyTypeContentType(nextType) {
+					const contentTypes = {
+						json: 'application/json',
+						text: 'text/plain',
+						xml: 'application/xml',
+						html: 'text/html',
+						form: 'application/x-www-form-urlencoded',
+					};
+
+					return contentTypes[nextType] || '';
+				}
+
+				function readBodyTypePlaceholder(nextType) {
+					const placeholders = {
+						raw: 'Raw request body',
+						json: '{\\n  "example": true\\n}',
+						text: 'Plain text request body',
+						xml: '<example>true</example>',
+						html: '<p>Request body</p>',
+					};
+
+					return placeholders[nextType] || '';
+				}
+
+				function inferRequestBodyType(headers, body) {
+					const contentType = readHeaderValue(headers, 'Content-Type').toLowerCase();
+
+					if (contentType.includes('application/json')) {
+						return 'json';
+					}
+
+					if (contentType.includes('text/plain')) {
+						return 'text';
+					}
+
+					if (contentType.includes('application/xml') || contentType.includes('text/xml')) {
+						return 'xml';
+					}
+
+					if (contentType.includes('text/html')) {
+						return 'html';
+					}
+
+					if (contentType.includes('application/x-www-form-urlencoded')) {
+						return 'form';
+					}
+
+					if (!body) {
+						return 'none';
+					}
+
+					return 'raw';
+				}
+
+				function readRequestBodyForSend() {
+					if (requestBodyType.value === 'none') {
+						return '';
+					}
+
+					if (requestBodyType.value === 'form') {
+						return readBodyFormValue();
+					}
+
+					return requestBody.value;
+				}
+
+				function beautifyJsonRequestBody() {
+					try {
+						setRequestBodyContent(JSON.stringify(JSON.parse(requestBody.value), null, 2));
+						clearRequestBodyMessage();
+						notifyRequestChanged();
+					} catch {
+						setRequestBodyMessage('Invalid JSON body');
+					}
+				}
+
+				function setRequestBodyMessage(message) {
+					requestBodyMessage.textContent = message;
+					requestBodyMessage.classList.remove('hidden');
+				}
+
+				function clearRequestBodyMessage() {
+					requestBodyMessage.textContent = '';
+					requestBodyMessage.classList.add('hidden');
+				}
+
+				function setHeaderValue(name, value) {
+					let row = findHeaderRow(name);
+
+					if (!row) {
+						addHeaderRow(name, value, true);
+						return;
+					}
+
+					const enabledInput = row.querySelector('.request-header-enabled');
+					const inputs = row.querySelectorAll('.request-header-input');
+
+					enabledInput.checked = true;
+					inputs[0].value = name;
+					inputs[1].value = value;
+					updateRequestRowEnabledState(row, true);
+				}
+
+				function removeHeaderValue(name) {
+					const row = findHeaderRow(name);
+
+					if (row) {
+						row.remove();
+					}
+				}
+
+				function findHeaderRow(name) {
+					const normalizedName = name.toLowerCase();
+
+					for (const row of requestHeadersTable.querySelectorAll('tr')) {
+						const inputs = row.querySelectorAll('.request-header-input');
+
+						if (inputs[0].value.trim().toLowerCase() === normalizedName) {
+							return row;
+						}
+					}
+
+					return undefined;
+				}
+
+				function readHeaderValue(headers, name) {
+					const normalizedName = name.toLowerCase();
+
+					for (const [headerName, value] of Object.entries(headers)) {
+						if (headerName.toLowerCase() === normalizedName) {
+							return value;
+						}
+					}
+
+					return '';
+				}
+
+				function readRequestHeaders() {
+					return readHeaderRows(false);
+				}
+
+				function readEnabledRequestHeaders() {
+					return readHeaderRows(true);
+				}
+
+				function readHeaderRows(onlyEnabled) {
+					const values = {};
+
+					for (const row of requestHeadersTable.querySelectorAll('tr')) {
+						const enabledInput = row.querySelector('.request-header-enabled');
+						const inputs = row.querySelectorAll('.request-header-input');
+						const name = inputs[0].value.trim();
+
+						if ((!onlyEnabled || enabledInput.checked) && name) {
+							values[name] = inputs[1].value;
+						}
+					}
+
+					return values;
+				}
+
+				function readRequestParams() {
+					return readParamRows(true);
+				}
+
+				function readEnabledRequestUrl() {
+					let parsed;
+					try {
+						parsed = new URL(url.value);
+					} catch {
+						return url.value;
+					}
+
+					parsed.search = '';
+
+					for (const [name, value] of readParamRows(true)) {
+						parsed.searchParams.append(name, value);
+					}
+
+					return parsed.toString();
+				}
+
+				function readParamRows(onlyEnabled) {
+					const values = [];
+
+					for (const row of requestParamsTable.querySelectorAll('tr')) {
+						const enabledInput = row.querySelector('.request-header-enabled');
+						const inputs = row.querySelectorAll('.request-header-input');
+						const name = inputs[0].value.trim();
+
+						if ((!onlyEnabled || enabledInput.checked) && name) {
+							values.push([name, inputs[1].value]);
+						}
+					}
+
+					return values;
+				}
+
+				function readParamsFromUrl() {
+					try {
+						return Array.from(new URL(url.value).searchParams.entries());
+					} catch {
+						return [];
+					}
+				}
+
+				function updateUrlFromParams() {
+					let parsed;
+					try {
+						parsed = new URL(url.value);
+					} catch {
+						return;
+					}
+
+					parsed.search = '';
+
+					for (const [name, value] of readRequestParams()) {
+						parsed.searchParams.append(name, value);
+					}
+
+					url.value = parsed.toString();
+				}
+
+				function notifyRequestChanged() {
+					vscode.postMessage({
+						type: 'requestChanged',
+						name: requestTitle.textContent || 'Untitled Request',
+						method: method.value,
+						url: url.value,
+						headers: readRequestHeaders(),
+						body: readRequestBodyForSend(),
+					});
+				}
+
+				function setRequestTitle(value) {
+					const title = value.trim() || 'Untitled Request';
+
+					requestTitle.textContent = title;
+					requestTitleInput.value = title;
+				}
+
+				function startTitleEdit() {
+					requestTitleInput.value = requestTitle.textContent || '';
+					requestTitle.classList.add('hidden');
+					requestTitleInput.classList.remove('hidden');
+					requestTitleInput.focus();
+					requestTitleInput.select();
+				}
+
+				function commitTitleEdit() {
+					if (requestTitleInput.classList.contains('hidden')) {
+						return;
+					}
+
+					setRequestTitle(requestTitleInput.value);
+					requestTitleInput.classList.add('hidden');
+					requestTitle.classList.remove('hidden');
+					notifyRequestChanged();
+				}
+
+				function cancelTitleEdit() {
+					requestTitleInput.value = requestTitle.textContent || '';
+					requestTitleInput.classList.add('hidden');
+					requestTitle.classList.remove('hidden');
+				}
+
+				function setRequestBodyContent(content) {
+					requestBody.value = content;
+					updateRequestBodyLineNumbers();
+					updateRequestBodyHighlight();
+				}
+
+				function updateRequestBodyLineNumbers() {
+					requestBodyLines.textContent = formatLineNumbers(requestBody.value || ' ');
+				}
+
+				function updateRequestBodyHighlight() {
+					if (!requestBodyEditor.classList.contains('json-highlight')) {
+						requestBodyHighlight.textContent = '';
+						return;
+					}
+
+					requestBodyHighlight.innerHTML = formatJsonHighlight(requestBody.value || ' ');
+					requestBodyHighlight.scrollTop = requestBody.scrollTop;
+				}
+
+				function formatJsonHighlight(content) {
+					const tokenPattern = /("(?:\\\\.|[^"\\\\])*"\\s*:?)|\\b(true|false|null)\\b|-?\\d+(?:\\.\\d+)?(?:[eE][+-]?\\d+)?/g;
+					let result = '';
+					let lastIndex = 0;
+					let match = tokenPattern.exec(content);
+
+					while (match) {
+						const token = match[0];
+						const className = readJsonTokenClass(token);
+
+						result += escapeHtml(content.slice(lastIndex, match.index));
+						result += '<span class="' + className + '">' + escapeHtml(token) + '</span>';
+						lastIndex = match.index + token.length;
+						match = tokenPattern.exec(content);
+					}
+
+					result += escapeHtml(content.slice(lastIndex));
+
+					return result;
+				}
+
+				function readJsonTokenClass(token) {
+					if (token.startsWith('"')) {
+						return token.trimEnd().endsWith(':') ? 'json-token-key' : 'json-token-string';
+					}
+
+					if (token === 'true' || token === 'false' || token === 'null') {
+						return 'json-token-literal';
+					}
+
+					return 'json-token-number';
+				}
+
+				function escapeHtml(content) {
+					return content
+						.replace(/&/g, '&amp;')
+						.replace(/</g, '&lt;')
+						.replace(/>/g, '&gt;');
+				}
+
+			function setBodyContent(content, highlightJson) {
+				if (highlightJson) {
+					responseBody.innerHTML = formatJsonHighlight(content);
+				} else {
+					responseBody.textContent = content;
+				}
+
+				responseBodyLines.textContent = formatLineNumbers(content);
+			}
+
+			function hasJsonContentType(headers) {
+				return readHeaderValue(headers, 'Content-Type').toLowerCase().includes('json');
+			}
+
+			function hasHtmlContentType(headers) {
+				const contentType = readHeaderValue(headers, 'Content-Type').toLowerCase();
+
+				return contentType.includes('text/html') || contentType.includes('application/xhtml+xml');
+			}
+
+			function setPreviewContent(content, canPreview, baseUrl) {
+				responsePreview.classList.toggle('hidden', !canPreview);
+				responsePreviewEmpty.classList.toggle('hidden', canPreview);
+
+				if (canPreview) {
+					responsePreview.srcdoc = createPreviewDocument(content, baseUrl);
+					responsePreviewEmpty.textContent = '';
+					return;
+				}
+
+				responsePreview.removeAttribute('srcdoc');
+				responsePreviewEmpty.textContent = 'HTML preview is available for HTML responses.';
+			}
+
+			function createPreviewDocument(content, baseUrl) {
+				const previewHead = '<base href="' + escapeHtmlAttribute(baseUrl) + '"><style>a, button, input, select, textarea, label, summary, [role="button"], [onclick] { pointer-events: none !important; } form { pointer-events: none !important; }</style>';
+
+				if (/<head[\\s>]/i.test(content)) {
+					return content.replace(/<head([^>]*)>/i, '<head$1>' + previewHead);
+				}
+
+				return previewHead + content;
+			}
+
+			function escapeHtmlAttribute(content) {
+				return content
+					.replace(/&/g, '&amp;')
+					.replace(/"/g, '&quot;')
+					.replace(/</g, '&lt;')
+					.replace(/>/g, '&gt;');
+			}
+
+			function formatLineNumbers(content) {
+				const lineCount = content.split('\\n').length;
+
+				return Array.from({ length: lineCount }, (_item, index) => String(index + 1)).join('\\n');
+			}
+
+		function formatHeaders(headers) {
+			const lines = Object.entries(headers)
 				.map(([name, value]) => name + ': ' + value)
 				.join('\\n');
 
-			return [
-				'Status: ' + result.status + ' ' + result.statusText,
-				'',
-				'Headers:',
-				headers || '(none)',
-				'',
-				'Body:',
-				result.body || '(empty)',
-			].join('\\n');
+			return lines || '(none)';
+		}
+
+		function formatDuration(durationMs) {
+			if (durationMs < 1000) {
+				return Math.round(durationMs) + ' ms';
+			}
+
+			return (durationMs / 1000).toFixed(2) + ' s';
+		}
+
+		function formatResponseSize(content) {
+			const bytes = new TextEncoder().encode(content).length;
+
+			if (bytes < 1024) {
+				return bytes + ' B';
+			}
+
+			if (bytes < 1024 * 1024) {
+				return (bytes / 1024).toFixed(1) + ' KB';
+			}
+
+			return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+		}
+
+		function formatBody(body) {
+			if (typeof body === 'string') {
+				return body || '(empty)';
+			}
+
+			return JSON.stringify(body, null, 2);
 		}
 	</script>
 </body>

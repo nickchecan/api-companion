@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 
 import { isRequestFileName, parseRequestFile } from './request/requestFile';
+import { RequestEditorProvider } from './webview/requestEditorProvider';
 import { ApiWorkbenchPanel } from './webview/requestPanel';
 
 export function activate(context: vscode.ExtensionContext) {
@@ -12,12 +13,12 @@ export function activate(context: vscode.ExtensionContext) {
 		const editor = vscode.window.activeTextEditor;
 
 		if (!editor) {
-			await vscode.window.showErrorMessage('Open a .request.json file before loading a request.');
+			await vscode.window.showErrorMessage('Open a .api.json file before loading a request.');
 			return;
 		}
 
 		if (!isRequestFileName(editor.document.fileName)) {
-			await vscode.window.showErrorMessage('The active file must end with .request.json.');
+			await vscode.window.showErrorMessage('The active file must end with .api.json.');
 			return;
 		}
 
@@ -31,7 +32,7 @@ export function activate(context: vscode.ExtensionContext) {
 		}
 	});
 
-	context.subscriptions.push(openApiWorkbench, loadRequestFile);
+	context.subscriptions.push(openApiWorkbench, loadRequestFile, RequestEditorProvider.register(context));
 }
 
 export function deactivate() {}

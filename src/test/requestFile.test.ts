@@ -46,7 +46,7 @@ suite('Request file parser', () => {
 	});
 
 	test('matches request file names', () => {
-		assert.strictEqual(isRequestFileName('/workspace/get-users.request.json'), true);
+		assert.strictEqual(isRequestFileName('/workspace/get-users.api.json'), true);
 		assert.strictEqual(isRequestFileName('/workspace/get-users.json'), false);
 	});
 });

@@ -7,6 +7,7 @@ export async function executeRequest(request: ApiRequest): Promise<ApiResponse> 
 	const response = await fetch(url, {
 		method,
 		headers: request.headers,
+		body: shouldSendBody(method, request.body) ? request.body : undefined,
 	});
 
 	return {
@@ -15,6 +16,10 @@ export async function executeRequest(request: ApiRequest): Promise<ApiResponse> 
 		headers: Object.fromEntries(response.headers.entries()),
 		body: method === 'HEAD' ? '' : await response.text(),
 	};
+}
+
+function shouldSendBody(method: string, body: string | undefined): body is string {
+	return method !== 'GET' && method !== 'HEAD' && body !== undefined && body.length > 0;
 }
 
 function normalizeMethod(method: string): string {
