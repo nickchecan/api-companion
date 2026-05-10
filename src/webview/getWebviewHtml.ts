@@ -229,6 +229,23 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 				margin-top: 4px;
 			}
 
+			.request-body-toolbar {
+				display: flex;
+				align-items: center;
+				gap: 8px;
+				margin-bottom: 8px;
+				color: var(--vscode-descriptionForeground);
+			}
+
+			.request-body-type-label {
+				font-weight: 600;
+			}
+
+			.request-body-type {
+				width: auto;
+				min-width: 180px;
+			}
+
 			.request-body-editor {
 				display: grid;
 				grid-template-columns: auto minmax(0, 1fr);
@@ -290,6 +307,15 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 			.request-body-input:focus {
 				outline: 1px solid var(--vscode-focusBorder);
 				outline-offset: -1px;
+			}
+
+			.request-body-input:disabled {
+				opacity: 0.65;
+				cursor: not-allowed;
+			}
+
+			.request-body-form {
+				background: transparent;
 			}
 
 			.response-divider {
@@ -509,9 +535,34 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 				<button class="request-header-add" id="add-request-header" type="button">Add Header</button>
 			</div>
 			<div class="request-panel-content hidden" id="request-body-panel" role="tabpanel" aria-labelledby="request-body-tab">
+				<div class="request-body-toolbar">
+					<label class="request-body-type-label" for="request-body-type">Type</label>
+					<select class="request-body-type" id="request-body-type">
+						<option value="none">None</option>
+						<option value="raw" selected>Raw</option>
+						<option value="json">JSON</option>
+						<option value="text">Text</option>
+						<option value="xml">XML</option>
+						<option value="html">HTML</option>
+						<option value="form">Form URL Encoded</option>
+					</select>
+				</div>
 				<div class="request-body-editor" id="request-body-editor">
 					<pre class="request-body-line-numbers" id="request-body-lines" aria-hidden="true">1</pre>
 					<textarea class="request-body-input" id="request-body" spellcheck="false" placeholder="{&#10;  &quot;example&quot;: true&#10;}"></textarea>
+				</div>
+				<div class="request-body-form hidden" id="request-body-form">
+					<table class="request-headers-table" aria-label="Request form URL encoded body">
+						<thead>
+							<tr>
+								<th scope="col">Key</th>
+								<th scope="col">Value</th>
+								<th scope="col"><span class="sr-only">Actions</span></th>
+							</tr>
+						</thead>
+						<tbody id="request-body-form-table"></tbody>
+					</table>
+					<button class="request-header-add" id="add-request-body-form-row" type="button">Add Pair</button>
 				</div>
 			</div>
 		</section>
@@ -557,6 +608,10 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 				const addRequestParam = document.getElementById('add-request-param');
 				const addRequestHeader = document.getElementById('add-request-header');
 				const requestBodyEditor = document.getElementById('request-body-editor');
+				const requestBodyForm = document.getElementById('request-body-form');
+				const requestBodyFormTable = document.getElementById('request-body-form-table');
+				const addRequestBodyFormRow = document.getElementById('add-request-body-form-row');
+				const requestBodyType = document.getElementById('request-body-type');
 				const requestBodyLines = document.getElementById('request-body-lines');
 				const requestBody = document.getElementById('request-body');
 				const bodyTab = document.getElementById('body-tab');
@@ -610,12 +665,23 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 					showRequestTab('body');
 				});
 
+				requestBodyType.addEventListener('change', () => {
+					setRequestBodyContent('');
+					renderRequestBodyFormRows('');
+					applyRequestBodyType(requestBodyType.value);
+					notifyRequestChanged();
+				});
+
 				addRequestParam.addEventListener('click', () => {
 					addRequestParamRow('', '');
 				});
 
 				addRequestHeader.addEventListener('click', () => {
 					addRequestHeaderRow('', '');
+				});
+
+				addRequestBodyFormRow.addEventListener('click', () => {
+					addBodyFormRow('', '');
 				});
 
 				method.addEventListener('change', () => {
@@ -678,7 +744,7 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 						method: method.value,
 						url: readEnabledRequestUrl(),
 						headers: readEnabledRequestHeaders(),
-						body: requestBody.value,
+						body: readRequestBodyForSend(),
 					});
 		});
 
@@ -710,6 +776,8 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 						setRequestBodyContent(message.request.body === null || message.request.body === undefined
 							? ''
 							: formatBody(message.request.body));
+						renderRequestBodyFormRows(requestBody.value);
+						setRequestBodyType(inferRequestBodyType(message.request.headers || {}, requestBody.value));
 				}
 			});
 
@@ -1004,8 +1072,253 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 					requestHeadersTable.append(row);
 				}
 
+				function renderRequestBodyFormRows(body) {
+					requestBodyFormTable.textContent = '';
+
+					const entries = readBodyFormEntries(body);
+
+					if (entries.length === 0) {
+						addBodyFormRow('', '');
+						return;
+					}
+
+					for (const [name, value] of entries) {
+						addBodyFormRow(name, value);
+					}
+				}
+
+				function addBodyFormRow(name, value) {
+					const row = document.createElement('tr');
+					const nameCell = document.createElement('td');
+					const valueCell = document.createElement('td');
+					const actionCell = document.createElement('td');
+					const nameInput = document.createElement('input');
+					const valueInput = document.createElement('input');
+					const removeButton = document.createElement('button');
+
+					nameInput.className = 'request-header-input';
+					nameInput.placeholder = 'Field name';
+					nameInput.value = name;
+					valueInput.className = 'request-header-input';
+					valueInput.placeholder = 'Field value';
+					valueInput.value = value;
+					removeButton.className = 'request-header-remove';
+					removeButton.type = 'button';
+					removeButton.ariaLabel = 'Remove form pair';
+					removeButton.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>';
+
+					nameInput.addEventListener('input', () => {
+						syncRequestBodyFromFormRows();
+						notifyRequestChanged();
+					});
+					valueInput.addEventListener('input', () => {
+						syncRequestBodyFromFormRows();
+						notifyRequestChanged();
+					});
+					removeButton.addEventListener('click', () => {
+						row.remove();
+
+						if (requestBodyFormTable.children.length === 0) {
+							addBodyFormRow('', '');
+						}
+
+						syncRequestBodyFromFormRows();
+						notifyRequestChanged();
+					});
+
+					nameCell.append(nameInput);
+					valueCell.append(valueInput);
+					actionCell.append(removeButton);
+					row.append(nameCell, valueCell, actionCell);
+					requestBodyFormTable.append(row);
+				}
+
+				function syncRequestBodyFromFormRows() {
+					requestBody.value = readBodyFormValue();
+					updateRequestBodyLineNumbers();
+				}
+
+				function readBodyFormValue() {
+					const params = new URLSearchParams();
+
+					for (const [name, value] of readBodyFormRows()) {
+						params.append(name, value);
+					}
+
+					return params.toString();
+				}
+
+				function readBodyFormRows() {
+					const values = [];
+
+					for (const row of requestBodyFormTable.querySelectorAll('tr')) {
+						const inputs = row.querySelectorAll('.request-header-input');
+						const name = inputs[0].value.trim();
+
+						if (name) {
+							values.push([name, inputs[1].value]);
+						}
+					}
+
+					return values;
+				}
+
+				function readBodyFormEntries(body) {
+					const entries = [];
+
+					for (const [name, value] of new URLSearchParams(body).entries()) {
+						entries.push([name, value]);
+					}
+
+					return entries;
+				}
+
 				function updateRequestRowEnabledState(row, enabled) {
 					row.classList.toggle('request-header-disabled', !enabled);
+				}
+
+				function setRequestBodyType(nextType) {
+					requestBodyType.value = nextType;
+					applyRequestBodyType(nextType);
+				}
+
+				function applyRequestBodyType(nextType) {
+					const hasTextBody = nextType !== 'none' && nextType !== 'form';
+					const hasFormBody = nextType === 'form';
+
+					requestBodyEditor.classList.toggle('hidden', !hasTextBody);
+					requestBodyForm.classList.toggle('hidden', !hasFormBody);
+					requestBody.disabled = !hasTextBody;
+					requestBody.placeholder = readBodyTypePlaceholder(nextType);
+
+					if (hasFormBody && requestBodyFormTable.children.length === 0) {
+						renderRequestBodyFormRows(requestBody.value);
+					}
+
+					const contentType = readBodyTypeContentType(nextType);
+
+					if (contentType) {
+						setHeaderValue('Content-Type', contentType);
+					} else if (nextType === 'none') {
+						removeHeaderValue('Content-Type');
+					}
+				}
+
+				function readBodyTypeContentType(nextType) {
+					const contentTypes = {
+						json: 'application/json',
+						text: 'text/plain',
+						xml: 'application/xml',
+						html: 'text/html',
+						form: 'application/x-www-form-urlencoded',
+					};
+
+					return contentTypes[nextType] || '';
+				}
+
+				function readBodyTypePlaceholder(nextType) {
+					const placeholders = {
+						raw: 'Raw request body',
+						json: '{\\n  "example": true\\n}',
+						text: 'Plain text request body',
+						xml: '<example>true</example>',
+						html: '<p>Request body</p>',
+					};
+
+					return placeholders[nextType] || '';
+				}
+
+				function inferRequestBodyType(headers, body) {
+					const contentType = readHeaderValue(headers, 'Content-Type').toLowerCase();
+
+					if (contentType.includes('application/json')) {
+						return 'json';
+					}
+
+					if (contentType.includes('text/plain')) {
+						return 'text';
+					}
+
+					if (contentType.includes('application/xml') || contentType.includes('text/xml')) {
+						return 'xml';
+					}
+
+					if (contentType.includes('text/html')) {
+						return 'html';
+					}
+
+					if (contentType.includes('application/x-www-form-urlencoded')) {
+						return 'form';
+					}
+
+					if (!body) {
+						return 'none';
+					}
+
+					return 'raw';
+				}
+
+				function readRequestBodyForSend() {
+					if (requestBodyType.value === 'none') {
+						return '';
+					}
+
+					if (requestBodyType.value === 'form') {
+						return readBodyFormValue();
+					}
+
+					return requestBody.value;
+				}
+
+				function setHeaderValue(name, value) {
+					let row = findHeaderRow(name);
+
+					if (!row) {
+						addHeaderRow(name, value, true);
+						return;
+					}
+
+					const enabledInput = row.querySelector('.request-header-enabled');
+					const inputs = row.querySelectorAll('.request-header-input');
+
+					enabledInput.checked = true;
+					inputs[0].value = name;
+					inputs[1].value = value;
+					updateRequestRowEnabledState(row, true);
+				}
+
+				function removeHeaderValue(name) {
+					const row = findHeaderRow(name);
+
+					if (row) {
+						row.remove();
+					}
+				}
+
+				function findHeaderRow(name) {
+					const normalizedName = name.toLowerCase();
+
+					for (const row of requestHeadersTable.querySelectorAll('tr')) {
+						const inputs = row.querySelectorAll('.request-header-input');
+
+						if (inputs[0].value.trim().toLowerCase() === normalizedName) {
+							return row;
+						}
+					}
+
+					return undefined;
+				}
+
+				function readHeaderValue(headers, name) {
+					const normalizedName = name.toLowerCase();
+
+					for (const [headerName, value] of Object.entries(headers)) {
+						if (headerName.toLowerCase() === normalizedName) {
+							return value;
+						}
+					}
+
+					return '';
 				}
 
 				function readRequestHeaders() {
@@ -1101,7 +1414,7 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 						method: method.value,
 						url: url.value,
 						headers: readRequestHeaders(),
-						body: requestBody.value,
+						body: readRequestBodyForSend(),
 					});
 				}
 
