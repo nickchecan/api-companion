@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 
 import { parseRequestFile } from '../request/requestFile';
+import { HttpMethod, isHttpMethod, RequestFileDefinition } from '../request/types';
 import { initializeRequestWebview, loadRequestInWebview, RequestChangedMessage } from './requestWebview';
 
 export class RequestEditorProvider implements vscode.CustomTextEditorProvider {
@@ -71,17 +72,10 @@ export class RequestEditorProvider implements vscode.CustomTextEditorProvider {
 	}
 
 	private async loadDocument(webviewPanel: vscode.WebviewPanel, document: vscode.TextDocument): Promise<void> {
-		try {
-			const request = parseRequestFile(document.getText());
-			webviewPanel.title = readRequestTitle(request.name);
-			await loadRequestInWebview(webviewPanel.webview, request);
-		} catch (error) {
-			webviewPanel.title = 'API Companion Request';
-			await webviewPanel.webview.postMessage({
-				type: 'requestError',
-				message: error instanceof Error ? error.message : 'Unable to load request file.',
-			});
-		}
+		const request = readRequestDocument(document.getText());
+
+		webviewPanel.title = readRequestTitle(request.name);
+		await loadRequestInWebview(webviewPanel.webview, request);
 	}
 
 	private async updateDocument(
@@ -99,7 +93,7 @@ export class RequestEditorProvider implements vscode.CustomTextEditorProvider {
 	}
 
 	private createUpdatedDocumentText(document: vscode.TextDocument, message: RequestChangedMessage): string {
-		const parsed = JSON.parse(document.getText()) as Record<string, unknown>;
+		const parsed = readDocumentObject(document.getText());
 
 		parsed.name = message.name.trim() || 'Untitled Request';
 		parsed.method = message.method;
@@ -109,6 +103,59 @@ export class RequestEditorProvider implements vscode.CustomTextEditorProvider {
 
 		return `${JSON.stringify(parsed, null, 2)}\n`;
 	}
+}
+
+function readRequestDocument(content: string): RequestFileDefinition {
+	try {
+		return parseRequestFile(content);
+	} catch {
+		return readDraftRequestDocument(content);
+	}
+}
+
+function readDraftRequestDocument(content: string): RequestFileDefinition {
+	const parsed = readDocumentObject(content);
+	const method = typeof parsed.method === 'string' && isHttpMethod(parsed.method.toUpperCase())
+		? parsed.method.toUpperCase() as HttpMethod
+		: 'GET';
+
+	return {
+		name: typeof parsed.name === 'string' && parsed.name.trim() ? parsed.name.trim() : 'Untitled Request',
+		method,
+		url: typeof parsed.url === 'string' ? parsed.url : '',
+		headers: readDraftHeaders(parsed.headers),
+		body: parsed.body ?? null,
+	};
+}
+
+function readDraftHeaders(headers: unknown): Record<string, string> {
+	if (!headers || typeof headers !== 'object' || Array.isArray(headers)) {
+		return {};
+	}
+
+	const normalized: Record<string, string> = {};
+
+	for (const [name, value] of Object.entries(headers)) {
+		if (name.trim() && typeof value === 'string') {
+			normalized[name] = value;
+		}
+	}
+
+	return normalized;
+}
+
+function readDocumentObject(content: string): Record<string, unknown> {
+	try {
+		const parsed = JSON.parse(content);
+
+		if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+			return parsed as Record<string, unknown>;
+		}
+	} catch {
+		return {};
+	}
+
+	return {};
 }
 
 function readBodyValue(body: string): unknown {

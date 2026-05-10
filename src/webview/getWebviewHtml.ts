@@ -517,6 +517,14 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 				z-index: 2;
 			}
 
+			.response-preview {
+				width: 100%;
+				min-height: 320px;
+				border: 0;
+				background: #ffffff;
+				pointer-events: none;
+			}
+
 			.hidden {
 				display: none;
 			}
@@ -645,6 +653,7 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 				<div class="response-tab-list" role="tablist" aria-label="Response sections">
 					<button class="response-tab active" id="body-tab" type="button" role="tab" aria-selected="true" aria-controls="body-panel">Body</button>
 					<button class="response-tab" id="headers-tab" type="button" role="tab" aria-selected="false" aria-controls="headers-panel">Headers</button>
+					<button class="response-tab" id="preview-tab" type="button" role="tab" aria-selected="false" aria-controls="preview-panel">Preview</button>
 				</div>
 				<div class="response-status" aria-live="polite">
 					<span class="response-time" id="response-time"></span><span id="response-status" class="response-status-text">No response yet.</span>
@@ -658,6 +667,10 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 			</div>
 			<div class="response-panel-content hidden" id="headers-panel" role="tabpanel" aria-labelledby="headers-tab">
 				<pre class="response-content" id="response-headers">(none)</pre>
+			</div>
+			<div class="response-panel-content hidden" id="preview-panel" role="tabpanel" aria-labelledby="preview-tab">
+				<iframe class="response-preview hidden" id="response-preview" sandbox="" title="HTML response preview"></iframe>
+				<pre class="response-content" id="response-preview-empty">HTML preview is available for HTML responses.</pre>
 			</div>
 		</section>
 
@@ -692,16 +705,21 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 				const requestBody = document.getElementById('request-body');
 				const bodyTab = document.getElementById('body-tab');
 				const headersTab = document.getElementById('headers-tab');
+				const previewTab = document.getElementById('preview-tab');
 			const bodyPanel = document.getElementById('body-panel');
 			const headersPanel = document.getElementById('headers-panel');
+			const previewPanel = document.getElementById('preview-panel');
 			const responseStatus = document.getElementById('response-status');
 			const responseTime = document.getElementById('response-time');
 			const responseHeaders = document.getElementById('response-headers');
+			const responsePreview = document.getElementById('response-preview');
+			const responsePreviewEmpty = document.getElementById('response-preview-empty');
 				const responseBodyContent = document.getElementById('response-body-content');
 				const responseBodyLines = document.getElementById('response-body-lines');
 				const responseBody = document.getElementById('response-body');
 				let requestStartedAt = 0;
 				let requestTimer = undefined;
+				let latestRequestUrl = '';
 				renderRequestParamsFromUrl();
 				renderRequestHeaders({});
 
@@ -803,6 +821,10 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 				showResponseTab('headers');
 			});
 
+			previewTab.addEventListener('click', () => {
+				showResponseTab('preview');
+			});
+
 				responseBodyContent.addEventListener('mousemove', (event) => {
 					updateScrollablePreHoverLine(responseBodyContent, responseBody, event);
 				});
@@ -817,16 +839,18 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 
 			form.addEventListener('submit', (event) => {
 				event.preventDefault();
+				latestRequestUrl = readEnabledRequestUrl();
 				send.disabled = true;
 				startRequestTimer();
 				setResponseStatus('Sending...');
 				responseHeaders.textContent = '(none)';
 				setBodyContent('(empty)');
+				setPreviewContent('', false, latestRequestUrl);
 
 			vscode.postMessage({
 						type: 'sendRequest',
 						method: method.value,
-						url: readEnabledRequestUrl(),
+						url: latestRequestUrl,
 						headers: readEnabledRequestHeaders(),
 						body: readRequestBodyForSend(),
 					});
@@ -848,6 +872,7 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 					setResponseStatus('Request failed', 'error');
 					responseHeaders.textContent = '(none)';
 					setBodyContent(message.message);
+					setPreviewContent('', false, latestRequestUrl);
 					return;
 				}
 
@@ -876,6 +901,7 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 					);
 					responseHeaders.textContent = formatHeaders(result.headers);
 					setBodyContent(result.body || '(empty)', hasJsonContentType(result.headers));
+					setPreviewContent(result.body || '', hasHtmlContentType(result.headers), latestRequestUrl);
 				}
 
 				function setResponseStatus(text, badgeType) {
@@ -994,13 +1020,18 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 
 				function showResponseTab(tabName) {
 					const showBody = tabName === 'body';
+					const showHeaders = tabName === 'headers';
+					const showPreview = tabName === 'preview';
 
 				bodyTab.classList.toggle('active', showBody);
-				headersTab.classList.toggle('active', !showBody);
+				headersTab.classList.toggle('active', showHeaders);
+				previewTab.classList.toggle('active', showPreview);
 				bodyTab.setAttribute('aria-selected', String(showBody));
-				headersTab.setAttribute('aria-selected', String(!showBody));
+				headersTab.setAttribute('aria-selected', String(showHeaders));
+				previewTab.setAttribute('aria-selected', String(showPreview));
 					bodyPanel.classList.toggle('hidden', !showBody);
-					headersPanel.classList.toggle('hidden', showBody);
+					headersPanel.classList.toggle('hidden', !showHeaders);
+					previewPanel.classList.toggle('hidden', !showPreview);
 				}
 
 				function renderRequestParamsFromUrl() {
@@ -1629,6 +1660,44 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 
 			function hasJsonContentType(headers) {
 				return readHeaderValue(headers, 'Content-Type').toLowerCase().includes('json');
+			}
+
+			function hasHtmlContentType(headers) {
+				const contentType = readHeaderValue(headers, 'Content-Type').toLowerCase();
+
+				return contentType.includes('text/html') || contentType.includes('application/xhtml+xml');
+			}
+
+			function setPreviewContent(content, canPreview, baseUrl) {
+				responsePreview.classList.toggle('hidden', !canPreview);
+				responsePreviewEmpty.classList.toggle('hidden', canPreview);
+
+				if (canPreview) {
+					responsePreview.srcdoc = createPreviewDocument(content, baseUrl);
+					responsePreviewEmpty.textContent = '';
+					return;
+				}
+
+				responsePreview.removeAttribute('srcdoc');
+				responsePreviewEmpty.textContent = 'HTML preview is available for HTML responses.';
+			}
+
+			function createPreviewDocument(content, baseUrl) {
+				const previewHead = '<base href="' + escapeHtmlAttribute(baseUrl) + '"><style>a, button, input, select, textarea, label, summary, [role="button"], [onclick] { pointer-events: none !important; } form { pointer-events: none !important; }</style>';
+
+				if (/<head[\\s>]/i.test(content)) {
+					return content.replace(/<head([^>]*)>/i, '<head$1>' + previewHead);
+				}
+
+				return previewHead + content;
+			}
+
+			function escapeHtmlAttribute(content) {
+				return content
+					.replace(/&/g, '&amp;')
+					.replace(/"/g, '&quot;')
+					.replace(/</g, '&lt;')
+					.replace(/>/g, '&gt;');
 			}
 
 			function formatLineNumbers(content) {
