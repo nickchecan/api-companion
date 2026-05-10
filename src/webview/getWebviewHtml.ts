@@ -434,11 +434,13 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 				white-space: nowrap;
 			}
 
-			.response-time {
+			.response-time,
+			.response-size {
 				font-variant-numeric: tabular-nums;
 			}
 
-			.response-time:not(:empty)::after {
+			.response-time:not(:empty)::after,
+			.response-size:not(:empty)::after {
 				content: " | ";
 				color: var(--vscode-descriptionForeground);
 			}
@@ -656,7 +658,7 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 					<button class="response-tab" id="preview-tab" type="button" role="tab" aria-selected="false" aria-controls="preview-panel">Preview</button>
 				</div>
 				<div class="response-status" aria-live="polite">
-					<span class="response-time" id="response-time"></span><span id="response-status" class="response-status-text">No response yet.</span>
+					<span class="response-time" id="response-time"></span><span class="response-size" id="response-size"></span><span id="response-status" class="response-status-text">No response yet.</span>
 				</div>
 			</div>
 			<div class="response-panel-content" id="body-panel" role="tabpanel" aria-labelledby="body-tab">
@@ -711,6 +713,7 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 			const previewPanel = document.getElementById('preview-panel');
 			const responseStatus = document.getElementById('response-status');
 			const responseTime = document.getElementById('response-time');
+			const responseSize = document.getElementById('response-size');
 			const responseHeaders = document.getElementById('response-headers');
 			const responsePreview = document.getElementById('response-preview');
 			const responsePreviewEmpty = document.getElementById('response-preview-empty');
@@ -843,6 +846,7 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 				send.disabled = true;
 				startRequestTimer();
 				setResponseStatus('Sending...');
+				responseSize.textContent = '';
 				responseHeaders.textContent = '(none)';
 				setBodyContent('(empty)');
 				setPreviewContent('', false, latestRequestUrl);
@@ -870,6 +874,7 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 					send.disabled = false;
 					stopRequestTimer();
 					setResponseStatus('Request failed', 'error');
+					responseSize.textContent = '';
 					responseHeaders.textContent = '(none)';
 					setBodyContent(message.message);
 					setPreviewContent('', false, latestRequestUrl);
@@ -899,6 +904,7 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 						'Status: ' + result.status + ' ' + result.statusText,
 						isSuccessStatus(result.status) ? 'success' : 'error',
 					);
+					responseSize.textContent = formatResponseSize(result.body || '');
 					responseHeaders.textContent = formatHeaders(result.headers);
 					setBodyContent(result.body || '(empty)', hasJsonContentType(result.headers));
 					setPreviewContent(result.body || '', hasHtmlContentType(result.headers), latestRequestUrl);
@@ -1720,6 +1726,20 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 			}
 
 			return (durationMs / 1000).toFixed(2) + ' s';
+		}
+
+		function formatResponseSize(content) {
+			const bytes = new TextEncoder().encode(content).length;
+
+			if (bytes < 1024) {
+				return bytes + ' B';
+			}
+
+			if (bytes < 1024 * 1024) {
+				return (bytes / 1024).toFixed(1) + ' KB';
+			}
+
+			return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
 		}
 
 		function formatBody(body) {
