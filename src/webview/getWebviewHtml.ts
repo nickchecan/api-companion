@@ -237,6 +237,29 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 				color: var(--vscode-descriptionForeground);
 			}
 
+			.authorization-field {
+				display: grid;
+				grid-template-columns: minmax(120px, 180px) minmax(180px, 320px);
+				gap: 8px;
+				align-items: center;
+			}
+
+			.authorization-field label {
+				font-weight: 600;
+				color: var(--vscode-descriptionForeground);
+			}
+
+			.authorization-input {
+				max-width: 420px;
+			}
+
+			.authorization-divider {
+				grid-column: 1 / -1;
+				height: 1px;
+				margin: 4px 0;
+				background: var(--vscode-panel-border);
+			}
+
 			.request-body-type-label {
 				font-weight: 600;
 			}
@@ -582,6 +605,7 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 		<section class="request-panel" aria-label="Request configuration area">
 			<div class="request-tabs" role="tablist" aria-label="Request sections">
 				<button class="request-tab active" id="request-params-tab" type="button" role="tab" aria-selected="true" aria-controls="request-params-panel">Params</button>
+				<button class="request-tab" id="request-authorization-tab" type="button" role="tab" aria-selected="false" aria-controls="request-authorization-panel">Authorization</button>
 				<button class="request-tab" id="request-headers-tab" type="button" role="tab" aria-selected="false" aria-controls="request-headers-panel">Headers</button>
 				<button class="request-tab" id="request-body-tab" type="button" role="tab" aria-selected="false" aria-controls="request-body-panel">Body</button>
 			</div>
@@ -598,6 +622,19 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 					<tbody id="request-params-table"></tbody>
 				</table>
 				<button class="request-header-add" id="add-request-param" type="button">Add Param</button>
+			</div>
+			<div class="request-panel-content hidden" id="request-authorization-panel" role="tabpanel" aria-labelledby="request-authorization-tab">
+				<div class="authorization-field">
+					<label for="authorization-type">Type</label>
+					<select id="authorization-type" name="authorization-type">
+						<option value="none" selected>None</option>
+						<option value="bearer">Bearer Token</option>
+						<option value="basic">Basic Auth</option>
+					</select>
+					<div class="authorization-divider" role="separator" aria-hidden="true"></div>
+					<label class="bearer-authorization-field hidden" for="bearer-token">Token</label>
+					<input class="authorization-input bearer-authorization-field hidden" id="bearer-token" name="bearer-token" type="text" autocomplete="off">
+				</div>
 			</div>
 			<div class="request-panel-content hidden" id="request-headers-panel" role="tabpanel" aria-labelledby="request-headers-tab">
 				<table class="request-headers-table" aria-label="Request headers">
@@ -686,11 +723,16 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 				const url = document.getElementById('url');
 				const send = document.getElementById('send');
 				const requestParamsTab = document.getElementById('request-params-tab');
+				const requestAuthorizationTab = document.getElementById('request-authorization-tab');
 				const requestHeadersTab = document.getElementById('request-headers-tab');
 				const requestBodyTab = document.getElementById('request-body-tab');
 				const requestParamsPanel = document.getElementById('request-params-panel');
+				const requestAuthorizationPanel = document.getElementById('request-authorization-panel');
 				const requestHeadersPanel = document.getElementById('request-headers-panel');
 				const requestBodyPanel = document.getElementById('request-body-panel');
+				const authorizationType = document.getElementById('authorization-type');
+				const bearerToken = document.getElementById('bearer-token');
+				const bearerAuthorizationFields = Array.from(document.querySelectorAll('.bearer-authorization-field'));
 				const requestParamsTable = document.getElementById('request-params-table');
 				const requestHeadersTable = document.getElementById('request-headers-table');
 				const addRequestParam = document.getElementById('add-request-param');
@@ -754,6 +796,10 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 					showRequestTab('params');
 				});
 
+				requestAuthorizationTab.addEventListener('click', () => {
+					showRequestTab('authorization');
+				});
+
 				requestHeadersTab.addEventListener('click', () => {
 					showRequestTab('headers');
 				});
@@ -767,6 +813,17 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 					setRequestBodyContent('');
 					renderRequestBodyFormRows('');
 					applyRequestBodyType(requestBodyType.value);
+					notifyRequestChanged();
+				});
+
+				authorizationType.addEventListener('change', () => {
+					applyAuthorizationType();
+					syncAuthorizationHeader();
+					notifyRequestChanged();
+				});
+
+				bearerToken.addEventListener('input', () => {
+					syncAuthorizationHeader();
 					notifyRequestChanged();
 				});
 
@@ -887,6 +944,7 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 						url.value = message.request.url;
 						renderRequestParamsFromUrl();
 						renderRequestHeaders(message.request.headers || {});
+						readAuthorizationFromHeaders(message.request.headers || {});
 						setRequestBodyContent(message.request.body === null || message.request.body === undefined
 							? ''
 							: formatBody(message.request.body));
@@ -1010,16 +1068,20 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 
 				function showRequestTab(tabName) {
 					const showParams = tabName === 'params';
+					const showAuthorization = tabName === 'authorization';
 					const showHeaders = tabName === 'headers';
 					const showBody = tabName === 'body';
 
 					requestParamsTab.classList.toggle('active', showParams);
+					requestAuthorizationTab.classList.toggle('active', showAuthorization);
 					requestHeadersTab.classList.toggle('active', showHeaders);
 					requestBodyTab.classList.toggle('active', showBody);
 					requestParamsTab.setAttribute('aria-selected', String(showParams));
+					requestAuthorizationTab.setAttribute('aria-selected', String(showAuthorization));
 					requestHeadersTab.setAttribute('aria-selected', String(showHeaders));
 					requestBodyTab.setAttribute('aria-selected', String(showBody));
 					requestParamsPanel.classList.toggle('hidden', !showParams);
+					requestAuthorizationPanel.classList.toggle('hidden', !showAuthorization);
 					requestHeadersPanel.classList.toggle('hidden', !showHeaders);
 					requestBodyPanel.classList.toggle('hidden', !showBody);
 				}
@@ -1338,6 +1400,37 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 					};
 
 					return contentTypes[nextType] || '';
+				}
+
+				function readAuthorizationFromHeaders(headers) {
+					const authorization = readHeaderValue(headers, 'Authorization');
+
+					if (authorization.startsWith('Bearer ')) {
+						authorizationType.value = 'bearer';
+						bearerToken.value = authorization.slice('Bearer '.length);
+					} else {
+						authorizationType.value = 'none';
+						bearerToken.value = '';
+					}
+
+					applyAuthorizationType();
+				}
+
+				function applyAuthorizationType() {
+					const showBearerToken = authorizationType.value === 'bearer';
+
+					bearerAuthorizationFields.forEach((field) => {
+						field.classList.toggle('hidden', !showBearerToken);
+					});
+				}
+
+				function syncAuthorizationHeader() {
+					if (authorizationType.value === 'bearer' && bearerToken.value) {
+						setHeaderValue('Authorization', 'Bearer ' + bearerToken.value);
+						return;
+					}
+
+					removeHeaderValue('Authorization');
 				}
 
 				function readBodyTypePlaceholder(nextType) {
