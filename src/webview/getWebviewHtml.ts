@@ -184,10 +184,26 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 				padding: 0 8px 8px 0;
 			}
 
+			.request-headers-table .request-header-enabled-cell {
+				width: 1%;
+				vertical-align: middle;
+			}
+
 			.request-headers-table td:last-child,
 			.request-headers-table th:last-child {
 				width: 1%;
 				padding-right: 0;
+			}
+
+			.request-header-enabled {
+				width: 16px;
+				height: 16px;
+				margin: 0;
+				vertical-align: middle;
+			}
+
+			.request-header-disabled .request-header-input {
+				opacity: 0.65;
 			}
 
 			.request-header-input {
@@ -468,6 +484,7 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 				<table class="request-headers-table" aria-label="Request query parameters">
 					<thead>
 						<tr>
+							<th scope="col"><span class="sr-only">Enabled</span></th>
 							<th scope="col">Key</th>
 							<th scope="col">Value</th>
 							<th scope="col"><span class="sr-only">Actions</span></th>
@@ -481,6 +498,7 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 				<table class="request-headers-table" aria-label="Request headers">
 					<thead>
 						<tr>
+							<th scope="col"><span class="sr-only">Enabled</span></th>
 							<th scope="col">Key</th>
 							<th scope="col">Value</th>
 							<th scope="col"><span class="sr-only">Actions</span></th>
@@ -658,8 +676,8 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 			vscode.postMessage({
 						type: 'sendRequest',
 						method: method.value,
-						url: url.value,
-						headers: readRequestHeaders(),
+						url: readEnabledRequestUrl(),
+						headers: readEnabledRequestHeaders(),
 						body: requestBody.value,
 					});
 		});
@@ -863,77 +881,188 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 				}
 
 				function addRequestParamRow(name, value) {
-					addKeyValueRow(requestParamsTable, name, value, 'Param name', 'Param value', 'Remove param', () => {
-						updateUrlFromParams();
-						notifyRequestChanged();
-					});
+					addParamRow(name, value, true);
 				}
 
 				function addRequestHeaderRow(name, value) {
-					addKeyValueRow(requestHeadersTable, name, value, 'Header name', 'Header value', 'Remove header', () => {
-						notifyRequestChanged();
-					});
+					addHeaderRow(name, value, true);
 				}
 
-				function addKeyValueRow(table, name, value, namePlaceholder, valuePlaceholder, removeLabel, onChange) {
+				function addParamRow(name, value, enabled) {
 					const row = document.createElement('tr');
+					const enabledCell = document.createElement('td');
 					const nameCell = document.createElement('td');
 					const valueCell = document.createElement('td');
 					const actionCell = document.createElement('td');
+					const enabledInput = document.createElement('input');
 					const nameInput = document.createElement('input');
 					const valueInput = document.createElement('input');
 					const removeButton = document.createElement('button');
 
+					enabledCell.className = 'request-header-enabled-cell';
+					enabledInput.className = 'request-header-enabled';
+					enabledInput.type = 'checkbox';
+					enabledInput.checked = enabled;
+					enabledInput.ariaLabel = 'Include param';
 					nameInput.className = 'request-header-input';
-					nameInput.placeholder = namePlaceholder;
+					nameInput.placeholder = 'Param name';
 					nameInput.value = name;
 					valueInput.className = 'request-header-input';
-					valueInput.placeholder = valuePlaceholder;
+					valueInput.placeholder = 'Param value';
 					valueInput.value = value;
 					removeButton.className = 'request-header-remove';
 					removeButton.type = 'button';
-					removeButton.ariaLabel = removeLabel;
+					removeButton.ariaLabel = 'Remove param';
 					removeButton.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>';
+					updateRequestRowEnabledState(row, enabledInput.checked);
+
+					enabledInput.addEventListener('change', () => {
+						updateRequestRowEnabledState(row, enabledInput.checked);
+						updateUrlFromParams();
+						notifyRequestChanged();
+					});
 					nameInput.addEventListener('input', () => {
-						onChange();
+						updateUrlFromParams();
+						notifyRequestChanged();
 					});
 					valueInput.addEventListener('input', () => {
-						onChange();
+						updateUrlFromParams();
+						notifyRequestChanged();
 					});
 					removeButton.addEventListener('click', () => {
 						row.remove();
 
-						if (table.children.length === 0) {
-							addKeyValueRow(table, '', '', namePlaceholder, valuePlaceholder, removeLabel, onChange);
+						if (requestParamsTable.children.length === 0) {
+							addParamRow('', '', true);
 						}
 
-						onChange();
+						updateUrlFromParams();
+						notifyRequestChanged();
 					});
 
+					enabledCell.append(enabledInput);
 					nameCell.append(nameInput);
 					valueCell.append(valueInput);
 					actionCell.append(removeButton);
-					row.append(nameCell, valueCell, actionCell);
-					table.append(row);
+					row.append(enabledCell, nameCell, valueCell, actionCell);
+					requestParamsTable.append(row);
+				}
+
+				function addHeaderRow(name, value, enabled) {
+					const row = document.createElement('tr');
+					const enabledCell = document.createElement('td');
+					const nameCell = document.createElement('td');
+					const valueCell = document.createElement('td');
+					const actionCell = document.createElement('td');
+					const enabledInput = document.createElement('input');
+					const nameInput = document.createElement('input');
+					const valueInput = document.createElement('input');
+					const removeButton = document.createElement('button');
+
+					enabledCell.className = 'request-header-enabled-cell';
+					enabledInput.className = 'request-header-enabled';
+					enabledInput.type = 'checkbox';
+					enabledInput.checked = enabled;
+					enabledInput.ariaLabel = 'Include header';
+					nameInput.className = 'request-header-input';
+					nameInput.placeholder = 'Header name';
+					nameInput.value = name;
+					valueInput.className = 'request-header-input';
+					valueInput.placeholder = 'Header value';
+					valueInput.value = value;
+					removeButton.className = 'request-header-remove';
+					removeButton.type = 'button';
+					removeButton.ariaLabel = 'Remove header';
+					removeButton.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>';
+					updateRequestRowEnabledState(row, enabledInput.checked);
+
+					enabledInput.addEventListener('change', () => {
+						updateRequestRowEnabledState(row, enabledInput.checked);
+						notifyRequestChanged();
+					});
+					nameInput.addEventListener('input', () => {
+						notifyRequestChanged();
+					});
+					valueInput.addEventListener('input', () => {
+						notifyRequestChanged();
+					});
+					removeButton.addEventListener('click', () => {
+						row.remove();
+
+						if (requestHeadersTable.children.length === 0) {
+							addHeaderRow('', '', true);
+						}
+
+						notifyRequestChanged();
+					});
+
+					enabledCell.append(enabledInput);
+					nameCell.append(nameInput);
+					valueCell.append(valueInput);
+					actionCell.append(removeButton);
+					row.append(enabledCell, nameCell, valueCell, actionCell);
+					requestHeadersTable.append(row);
+				}
+
+				function updateRequestRowEnabledState(row, enabled) {
+					row.classList.toggle('request-header-disabled', !enabled);
 				}
 
 				function readRequestHeaders() {
-					return readKeyValueRows(requestHeadersTable);
+					return readHeaderRows(false);
+				}
+
+				function readEnabledRequestHeaders() {
+					return readHeaderRows(true);
+				}
+
+				function readHeaderRows(onlyEnabled) {
+					const values = {};
+
+					for (const row of requestHeadersTable.querySelectorAll('tr')) {
+						const enabledInput = row.querySelector('.request-header-enabled');
+						const inputs = row.querySelectorAll('.request-header-input');
+						const name = inputs[0].value.trim();
+
+						if ((!onlyEnabled || enabledInput.checked) && name) {
+							values[name] = inputs[1].value;
+						}
+					}
+
+					return values;
 				}
 
 				function readRequestParams() {
-					return Object.entries(readKeyValueRows(requestParamsTable));
+					return readParamRows(true);
 				}
 
-				function readKeyValueRows(table) {
-					const values = {};
+				function readEnabledRequestUrl() {
+					let parsed;
+					try {
+						parsed = new URL(url.value);
+					} catch {
+						return url.value;
+					}
 
-					for (const row of table.querySelectorAll('tr')) {
-						const inputs = row.querySelectorAll('input');
+					parsed.search = '';
+
+					for (const [name, value] of readParamRows(true)) {
+						parsed.searchParams.append(name, value);
+					}
+
+					return parsed.toString();
+				}
+
+				function readParamRows(onlyEnabled) {
+					const values = [];
+
+					for (const row of requestParamsTable.querySelectorAll('tr')) {
+						const enabledInput = row.querySelector('.request-header-enabled');
+						const inputs = row.querySelectorAll('.request-header-input');
 						const name = inputs[0].value.trim();
 
-						if (name) {
-							values[name] = inputs[1].value;
+						if ((!onlyEnabled || enabledInput.checked) && name) {
+							values.push([name, inputs[1].value]);
 						}
 					}
 
