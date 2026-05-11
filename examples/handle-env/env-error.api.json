@@ -1,0 +1,9 @@
+{
+  "name": "Validating Variables",
+  "method": "GET",
+  "url": "{{DONT_EXIST}}/endpoint",
+  "headers": {
+    "Content-Type": "application/json"
+  },
+  "body": "dsfdeas"
+}

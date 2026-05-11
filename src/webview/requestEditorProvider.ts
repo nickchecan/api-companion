@@ -2,7 +2,12 @@ import * as vscode from 'vscode';
 
 import { parseRequestFile } from '../request/requestFile';
 import { HttpMethod, isHttpMethod, RequestFileDefinition } from '../request/types';
-import { initializeRequestWebview, loadRequestInWebview, RequestChangedMessage } from './requestWebview';
+import {
+	executeRequestWithEnvironment,
+	initializeRequestWebview,
+	loadRequestInWebview,
+	RequestChangedMessage,
+} from './requestWebview';
 
 export class RequestEditorProvider implements vscode.CustomTextEditorProvider {
 	public static readonly viewType = 'api-companion.requestEditor';
@@ -51,6 +56,7 @@ export class RequestEditorProvider implements vscode.CustomTextEditorProvider {
 					void this.updateDocument(document, nextText);
 				}
 			},
+			onSendRequest: (message) => executeRequestWithEnvironment(message, document.uri),
 		});
 		const documentSubscription = vscode.workspace.onDidChangeTextDocument((event) => {
 			if (event.document.uri.toString() === document.uri.toString()) {
