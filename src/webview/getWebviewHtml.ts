@@ -253,20 +253,6 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 				max-width: 420px;
 			}
 
-			.authorization-checkbox-field {
-				display: flex;
-				align-items: center;
-				gap: 8px;
-				grid-column: 2;
-				color: var(--vscode-descriptionForeground);
-			}
-
-			.authorization-checkbox-field input {
-				width: 16px;
-				height: 16px;
-				margin: 0;
-			}
-
 			.authorization-divider {
 				grid-column: 1 / -1;
 				height: 1px;
@@ -651,11 +637,7 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 					<label class="basic-authorization-field hidden" for="basic-auth-username">Username</label>
 					<input class="authorization-input basic-authorization-field hidden" id="basic-auth-username" name="basic-auth-username" type="text" autocomplete="off">
 					<label class="basic-authorization-field hidden" for="basic-auth-password">Password</label>
-					<input class="authorization-input basic-authorization-field hidden" id="basic-auth-password" name="basic-auth-password" type="password" autocomplete="off">
-					<label class="authorization-checkbox-field basic-authorization-field hidden" for="show-basic-auth-password">
-						<input id="show-basic-auth-password" name="show-basic-auth-password" type="checkbox">
-						Show Password
-					</label>
+					<input class="authorization-input basic-authorization-field hidden" id="basic-auth-password" name="basic-auth-password" type="text" autocomplete="off">
 				</div>
 			</div>
 			<div class="request-panel-content hidden" id="request-headers-panel" role="tabpanel" aria-labelledby="request-headers-tab">
@@ -757,7 +739,6 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 				const bearerAuthorizationFields = Array.from(document.querySelectorAll('.bearer-authorization-field'));
 				const basicAuthUsername = document.getElementById('basic-auth-username');
 				const basicAuthPassword = document.getElementById('basic-auth-password');
-				const showBasicAuthPassword = document.getElementById('show-basic-auth-password');
 				const basicAuthorizationFields = Array.from(document.querySelectorAll('.basic-authorization-field'));
 				const requestParamsTable = document.getElementById('request-params-table');
 				const requestHeadersTable = document.getElementById('request-headers-table');
@@ -862,10 +843,6 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 				basicAuthPassword.addEventListener('input', () => {
 					syncAuthorizationHeader();
 					notifyRequestChanged();
-				});
-
-				showBasicAuthPassword.addEventListener('change', () => {
-					basicAuthPassword.type = showBasicAuthPassword.checked ? 'text' : 'password';
 				});
 
 				addRequestParam.addEventListener('click', () => {
