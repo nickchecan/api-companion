@@ -253,6 +253,20 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 				max-width: 420px;
 			}
 
+			.authorization-checkbox-field {
+				display: flex;
+				align-items: center;
+				gap: 8px;
+				grid-column: 2;
+				color: var(--vscode-descriptionForeground);
+			}
+
+			.authorization-checkbox-field input {
+				width: 16px;
+				height: 16px;
+				margin: 0;
+			}
+
 			.authorization-divider {
 				grid-column: 1 / -1;
 				height: 1px;
@@ -634,6 +648,14 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 					<div class="authorization-divider" role="separator" aria-hidden="true"></div>
 					<label class="bearer-authorization-field hidden" for="bearer-token">Token</label>
 					<input class="authorization-input bearer-authorization-field hidden" id="bearer-token" name="bearer-token" type="text" autocomplete="off">
+					<label class="basic-authorization-field hidden" for="basic-auth-username">Username</label>
+					<input class="authorization-input basic-authorization-field hidden" id="basic-auth-username" name="basic-auth-username" type="text" autocomplete="off">
+					<label class="basic-authorization-field hidden" for="basic-auth-password">Password</label>
+					<input class="authorization-input basic-authorization-field hidden" id="basic-auth-password" name="basic-auth-password" type="password" autocomplete="off">
+					<label class="authorization-checkbox-field basic-authorization-field hidden" for="show-basic-auth-password">
+						<input id="show-basic-auth-password" name="show-basic-auth-password" type="checkbox">
+						Show Password
+					</label>
 				</div>
 			</div>
 			<div class="request-panel-content hidden" id="request-headers-panel" role="tabpanel" aria-labelledby="request-headers-tab">
@@ -733,6 +755,10 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 				const authorizationType = document.getElementById('authorization-type');
 				const bearerToken = document.getElementById('bearer-token');
 				const bearerAuthorizationFields = Array.from(document.querySelectorAll('.bearer-authorization-field'));
+				const basicAuthUsername = document.getElementById('basic-auth-username');
+				const basicAuthPassword = document.getElementById('basic-auth-password');
+				const showBasicAuthPassword = document.getElementById('show-basic-auth-password');
+				const basicAuthorizationFields = Array.from(document.querySelectorAll('.basic-authorization-field'));
 				const requestParamsTable = document.getElementById('request-params-table');
 				const requestHeadersTable = document.getElementById('request-headers-table');
 				const addRequestParam = document.getElementById('add-request-param');
@@ -765,6 +791,7 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 				let requestStartedAt = 0;
 				let requestTimer = undefined;
 				let latestRequestUrl = '';
+				let activeAuthorizationType = 'none';
 				renderRequestParamsFromUrl();
 				renderRequestHeaders({});
 
@@ -825,6 +852,20 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 				bearerToken.addEventListener('input', () => {
 					syncAuthorizationHeader();
 					notifyRequestChanged();
+				});
+
+				basicAuthUsername.addEventListener('input', () => {
+					syncAuthorizationHeader();
+					notifyRequestChanged();
+				});
+
+				basicAuthPassword.addEventListener('input', () => {
+					syncAuthorizationHeader();
+					notifyRequestChanged();
+				});
+
+				showBasicAuthPassword.addEventListener('change', () => {
+					basicAuthPassword.type = showBasicAuthPassword.checked ? 'text' : 'password';
 				});
 
 				addRequestParam.addEventListener('click', () => {
@@ -1407,10 +1448,17 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 
 					if (authorization.startsWith('Bearer ')) {
 						authorizationType.value = 'bearer';
+						activeAuthorizationType = 'bearer';
 						bearerToken.value = authorization.slice('Bearer '.length);
-					} else {
-						authorizationType.value = 'none';
+						basicAuthUsername.value = '';
+						basicAuthPassword.value = '';
+					} else if (authorization.startsWith('Basic ')) {
+						authorizationType.value = 'basic';
+						activeAuthorizationType = 'basic';
 						bearerToken.value = '';
+						readBasicAuthorizationCredentials(authorization.slice('Basic '.length));
+					} else {
+						authorizationType.value = activeAuthorizationType;
 					}
 
 					applyAuthorizationType();
@@ -1418,19 +1466,71 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 
 				function applyAuthorizationType() {
 					const showBearerToken = authorizationType.value === 'bearer';
+					const showBasicAuth = authorizationType.value === 'basic';
 
 					bearerAuthorizationFields.forEach((field) => {
 						field.classList.toggle('hidden', !showBearerToken);
 					});
+
+					basicAuthorizationFields.forEach((field) => {
+						field.classList.toggle('hidden', !showBasicAuth);
+					});
 				}
 
 				function syncAuthorizationHeader() {
+					activeAuthorizationType = authorizationType.value;
+
 					if (authorizationType.value === 'bearer' && bearerToken.value) {
 						setHeaderValue('Authorization', 'Bearer ' + bearerToken.value);
 						return;
 					}
 
+					if (authorizationType.value === 'basic' && (basicAuthUsername.value || basicAuthPassword.value)) {
+						setHeaderValue('Authorization', 'Basic ' + encodeBase64(basicAuthUsername.value + ':' + basicAuthPassword.value));
+						return;
+					}
+
 					removeHeaderValue('Authorization');
+				}
+
+				function readBasicAuthorizationCredentials(encodedCredentials) {
+					const credentials = decodeBase64(encodedCredentials);
+					const separatorIndex = credentials.indexOf(':');
+
+					if (separatorIndex === -1) {
+						basicAuthUsername.value = credentials;
+						basicAuthPassword.value = '';
+						return;
+					}
+
+					basicAuthUsername.value = credentials.slice(0, separatorIndex);
+					basicAuthPassword.value = credentials.slice(separatorIndex + 1);
+				}
+
+				function encodeBase64(value) {
+					const bytes = new TextEncoder().encode(value);
+					let binary = '';
+
+					bytes.forEach((byte) => {
+						binary += String.fromCharCode(byte);
+					});
+
+					return btoa(binary);
+				}
+
+				function decodeBase64(value) {
+					try {
+						const binary = atob(value);
+						const bytes = new Uint8Array(binary.length);
+
+						for (let i = 0; i < binary.length; i++) {
+							bytes[i] = binary.charCodeAt(i);
+						}
+
+						return new TextDecoder().decode(bytes);
+					} catch {
+						return '';
+					}
 				}
 
 				function readBodyTypePlaceholder(nextType) {
@@ -1511,8 +1611,12 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 					let row = findHeaderRow(name);
 
 					if (!row) {
-						addHeaderRow(name, value, true);
-						return;
+						row = findEmptyHeaderRow();
+
+						if (!row) {
+							addHeaderRow(name, value, true);
+							return;
+						}
 					}
 
 					const enabledInput = row.querySelector('.request-header-enabled');
@@ -1530,6 +1634,10 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 					if (row) {
 						row.remove();
 					}
+
+					if (requestHeadersTable.children.length === 0) {
+						addHeaderRow('', '', true);
+					}
 				}
 
 				function findHeaderRow(name) {
@@ -1539,6 +1647,18 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 						const inputs = row.querySelectorAll('.request-header-input');
 
 						if (inputs[0].value.trim().toLowerCase() === normalizedName) {
+							return row;
+						}
+					}
+
+					return undefined;
+				}
+
+				function findEmptyHeaderRow() {
+					for (const row of requestHeadersTable.querySelectorAll('tr')) {
+						const inputs = row.querySelectorAll('.request-header-input');
+
+						if (!inputs[0].value.trim() && !inputs[1].value) {
 							return row;
 						}
 					}
