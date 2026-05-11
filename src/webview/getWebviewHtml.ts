@@ -357,19 +357,19 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 			}
 
 			.json-token-key {
-				color: #7dd3fc;
+				color: var(--vscode-textLink-foreground, var(--vscode-editor-foreground));
 			}
 
 			.json-token-string {
-				color: #a7f3d0;
+				color: var(--vscode-charts-green, var(--vscode-editor-foreground));
 			}
 
 			.json-token-number {
-				color: #fca5a5;
+				color: var(--vscode-charts-orange, var(--vscode-editor-foreground));
 			}
 
 			.json-token-literal {
-				color: #c4b5fd;
+				color: var(--vscode-charts-purple, var(--vscode-editor-foreground));
 			}
 
 			.request-body-input {
@@ -696,6 +696,7 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 				<div class="response-tab-list" role="tablist" aria-label="Response sections">
 					<button class="response-tab active" id="body-tab" type="button" role="tab" aria-selected="true" aria-controls="body-panel">Body</button>
 					<button class="response-tab" id="headers-tab" type="button" role="tab" aria-selected="false" aria-controls="headers-panel">Headers</button>
+					<button class="response-tab" id="raw-tab" type="button" role="tab" aria-selected="false" aria-controls="raw-panel">Raw</button>
 					<button class="response-tab" id="preview-tab" type="button" role="tab" aria-selected="false" aria-controls="preview-panel">Preview</button>
 				</div>
 				<div class="response-status" aria-live="polite">
@@ -710,6 +711,12 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 			</div>
 			<div class="response-panel-content hidden" id="headers-panel" role="tabpanel" aria-labelledby="headers-tab">
 				<pre class="response-content" id="response-headers">(none)</pre>
+			</div>
+			<div class="response-panel-content hidden" id="raw-panel" role="tabpanel" aria-labelledby="raw-tab">
+				<div class="response-body-content" id="response-raw-content">
+					<pre class="response-line-numbers" id="response-raw-lines" aria-hidden="true">1</pre>
+					<pre class="response-content" id="response-raw">(empty)</pre>
+				</div>
 			</div>
 			<div class="response-panel-content hidden" id="preview-panel" role="tabpanel" aria-labelledby="preview-tab">
 				<iframe class="response-preview hidden" id="response-preview" sandbox="" title="HTML response preview"></iframe>
@@ -756,14 +763,19 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 				const requestBody = document.getElementById('request-body');
 				const bodyTab = document.getElementById('body-tab');
 				const headersTab = document.getElementById('headers-tab');
+				const rawTab = document.getElementById('raw-tab');
 				const previewTab = document.getElementById('preview-tab');
 			const bodyPanel = document.getElementById('body-panel');
 			const headersPanel = document.getElementById('headers-panel');
+			const rawPanel = document.getElementById('raw-panel');
 			const previewPanel = document.getElementById('preview-panel');
 			const responseStatus = document.getElementById('response-status');
 			const responseTime = document.getElementById('response-time');
 			const responseSize = document.getElementById('response-size');
 			const responseHeaders = document.getElementById('response-headers');
+			const responseRawContent = document.getElementById('response-raw-content');
+			const responseRawLines = document.getElementById('response-raw-lines');
+			const responseRaw = document.getElementById('response-raw');
 			const responsePreview = document.getElementById('response-preview');
 			const responsePreviewEmpty = document.getElementById('response-preview-empty');
 				const responseBodyContent = document.getElementById('response-body-content');
@@ -899,6 +911,10 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 				showResponseTab('headers');
 			});
 
+			rawTab.addEventListener('click', () => {
+				showResponseTab('raw');
+			});
+
 			previewTab.addEventListener('click', () => {
 				showResponseTab('preview');
 			});
@@ -911,8 +927,20 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 					clearHoverLine(responseBodyContent);
 				});
 
-				responseBodyContent.addEventListener('scroll', () => {
-					clearHoverLine(responseBodyContent);
+			responseBodyContent.addEventListener('scroll', () => {
+				clearHoverLine(responseBodyContent);
+			});
+
+				responseRawContent.addEventListener('mousemove', (event) => {
+					updateScrollablePreHoverLine(responseRawContent, responseRaw, event);
+				});
+
+				responseRawContent.addEventListener('mouseleave', () => {
+					clearHoverLine(responseRawContent);
+				});
+
+				responseRawContent.addEventListener('scroll', () => {
+					clearHoverLine(responseRawContent);
 				});
 
 			form.addEventListener('submit', (event) => {
@@ -923,6 +951,7 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 				setResponseStatus('Sending...');
 				responseSize.textContent = '';
 				responseHeaders.textContent = '(none)';
+				setRawContent('(empty)');
 				setBodyContent('(empty)');
 				setPreviewContent('', false, latestRequestUrl);
 
@@ -951,6 +980,7 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 					setResponseStatus('Request failed', 'error');
 					responseSize.textContent = '';
 					responseHeaders.textContent = '(none)';
+					setRawContent(message.message);
 					setBodyContent(message.message);
 					setPreviewContent('', false, latestRequestUrl);
 					return;
@@ -982,7 +1012,8 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 					);
 					responseSize.textContent = formatResponseSize(result.body || '');
 					responseHeaders.textContent = formatHeaders(result.headers);
-					setBodyContent(result.body || '(empty)', hasJsonContentType(result.headers));
+					setRawContent(result.body || '(empty)');
+					setFormattedBodyContent(result.body || '(empty)', result.headers);
 					setPreviewContent(result.body || '', hasHtmlContentType(result.headers), latestRequestUrl);
 				}
 
@@ -1107,16 +1138,20 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 				function showResponseTab(tabName) {
 					const showBody = tabName === 'body';
 					const showHeaders = tabName === 'headers';
+					const showRaw = tabName === 'raw';
 					const showPreview = tabName === 'preview';
 
 				bodyTab.classList.toggle('active', showBody);
 				headersTab.classList.toggle('active', showHeaders);
+				rawTab.classList.toggle('active', showRaw);
 				previewTab.classList.toggle('active', showPreview);
 				bodyTab.setAttribute('aria-selected', String(showBody));
 				headersTab.setAttribute('aria-selected', String(showHeaders));
+				rawTab.setAttribute('aria-selected', String(showRaw));
 				previewTab.setAttribute('aria-selected', String(showPreview));
 					bodyPanel.classList.toggle('hidden', !showBody);
 					headersPanel.classList.toggle('hidden', !showHeaders);
+					rawPanel.classList.toggle('hidden', !showRaw);
 					previewPanel.classList.toggle('hidden', !showPreview);
 				}
 
@@ -1852,6 +1887,51 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 				}
 
 				responseBodyLines.textContent = formatLineNumbers(content);
+			}
+
+			function setRawContent(content) {
+				responseRaw.textContent = content;
+				responseRawLines.textContent = formatLineNumbers(content);
+			}
+
+			function setFormattedBodyContent(content, headers) {
+				const formatted = formatResponseBody(content, headers);
+
+				setBodyContent(formatted.content, formatted.highlightJson);
+			}
+
+			function formatResponseBody(content, headers) {
+				const jsonBody = formatJsonResponseBody(content, headers);
+
+				if (jsonBody) {
+					return {
+						content: jsonBody,
+						highlightJson: true,
+					};
+				}
+
+				return {
+					content,
+					highlightJson: false,
+				};
+			}
+
+			function formatJsonResponseBody(content, headers) {
+				if (!hasJsonContentType(headers) && !looksLikeJson(content)) {
+					return '';
+				}
+
+				try {
+					return JSON.stringify(JSON.parse(content), null, 2);
+				} catch {
+					return '';
+				}
+			}
+
+			function looksLikeJson(content) {
+				const trimmed = content.trim();
+
+				return trimmed.startsWith('{') || trimmed.startsWith('[');
 			}
 
 			function hasJsonContentType(headers) {
