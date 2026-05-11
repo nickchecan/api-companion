@@ -1,0 +1,12 @@
+{
+  "name": "Testing PUT",
+  "method": "PUT",
+  "url": "https://postman-echo.com/put",
+  "headers": {
+    "Content-Type": "application/json",
+    "Authorization": "Basic cG9zdG1hbjpwYXNzd29yZA=="
+  },
+  "body": {
+    "foo": "updated value"
+  }
+}
