@@ -1,5 +1,5 @@
 {
-  "name": "Call Google Website",
+  "name": "Render Website",
   "method": "GET",
   "url": "https://google.com/",
   "headers": {
