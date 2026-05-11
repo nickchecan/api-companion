@@ -1,10 +1,11 @@
 import * as vscode from 'vscode';
 
+import { parseEnvFile, resolveRequestVariables } from '../request/environment';
 import { executeRequest } from '../request/requestRunner';
-import { RequestFileDefinition } from '../request/types';
+import { ApiResponse, RequestFileDefinition } from '../request/types';
 import { getWebviewHtml } from './getWebviewHtml';
 
-interface SendRequestMessage {
+export interface SendRequestMessage {
 	type: 'sendRequest';
 	method: string;
 	url: string;
@@ -28,6 +29,7 @@ export interface RequestChangedMessage {
 export interface RequestWebviewHandlers {
 	onReady?: () => void;
 	onRequestChanged?: (message: RequestChangedMessage) => void;
+	onSendRequest?: (message: SendRequestMessage) => Promise<ApiResponse>;
 }
 
 export function initializeRequestWebview(
@@ -51,7 +53,7 @@ export function initializeRequestWebview(
 			return;
 		}
 
-		void handleMessage(webview, message);
+		void handleMessage(webview, message, handlers);
 	});
 }
 
@@ -62,13 +64,17 @@ export async function loadRequestInWebview(webview: vscode.Webview, request: Req
 	});
 }
 
-async function handleMessage(webview: vscode.Webview, message: unknown): Promise<void> {
+async function handleMessage(
+	webview: vscode.Webview,
+	message: unknown,
+	handlers: RequestWebviewHandlers,
+): Promise<void> {
 	if (!isSendRequestMessage(message)) {
 		return;
 	}
 
 	try {
-		const response = await executeRequest({
+		const response = handlers.onSendRequest ? await handlers.onSendRequest(message) : await executeRequest({
 			method: message.method,
 			url: message.url,
 			headers: message.headers,
@@ -85,6 +91,50 @@ async function handleMessage(webview: vscode.Webview, message: unknown): Promise
 			message: error instanceof Error ? error.message : 'Request failed.',
 		});
 	}
+}
+
+export async function executeRequestWithEnvironment(
+	message: SendRequestMessage,
+	requestUri: vscode.Uri | undefined,
+): Promise<ApiResponse> {
+	const variables = requestUri ? await readEnvironmentVariables(requestUri) : {};
+	const request = resolveRequestVariables({
+		method: message.method,
+		url: message.url,
+		headers: message.headers,
+		body: message.body,
+	}, variables);
+
+	return executeRequest(request);
+}
+
+async function readEnvironmentVariables(requestUri: vscode.Uri): Promise<Record<string, string>> {
+	const envUri = vscode.Uri.joinPath(readRequestDirectory(requestUri), '.env');
+
+	try {
+		const content = await vscode.workspace.fs.readFile(envUri);
+		return parseEnvFile(new TextDecoder().decode(content));
+	} catch (error) {
+		if (isFileNotFoundError(error)) {
+			return {};
+		}
+
+		throw error;
+	}
+}
+
+function readRequestDirectory(requestUri: vscode.Uri): vscode.Uri {
+	const directoryPath = requestUri.path.replace(/\/[^/]*$/, '') || '/';
+
+	return requestUri.with({ path: directoryPath });
+}
+
+function isFileNotFoundError(error: unknown): boolean {
+	if (!(error instanceof vscode.FileSystemError)) {
+		return false;
+	}
+
+	return error.code === 'FileNotFound';
 }
 
 function isSendRequestMessage(message: unknown): message is SendRequestMessage {

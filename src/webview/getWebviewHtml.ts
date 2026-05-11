@@ -116,6 +116,42 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 			padding: 0 8px;
 		}
 
+		.variable-input-wrapper {
+			display: block;
+			position: relative;
+			width: 100%;
+		}
+
+		.authorization-field .variable-input-wrapper {
+			max-width: 420px;
+		}
+
+		.variable-highlight-overlay {
+			display: none;
+			position: absolute;
+			inset: 0;
+			box-sizing: border-box;
+			padding: 0 8px;
+			align-items: center;
+			overflow: hidden;
+			white-space: pre;
+			color: var(--vscode-input-foreground);
+			background: transparent;
+			border: 1px solid transparent;
+			font: inherit;
+			pointer-events: none;
+		}
+
+		.variable-input-wrapper.has-secret-reference .variable-highlight-overlay {
+			display: flex;
+		}
+
+		.variable-input-wrapper.has-secret-reference input {
+			color: transparent;
+			caret-color: var(--vscode-input-foreground);
+			background: var(--vscode-input-background);
+		}
+
 		button {
 			color: var(--vscode-button-foreground);
 			background: var(--vscode-button-background);
@@ -253,6 +289,11 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 				max-width: 420px;
 			}
 
+			.secret-reference {
+				color: var(--vscode-charts-yellow, var(--vscode-editorWarning-foreground, var(--vscode-editor-foreground)));
+				background: transparent;
+			}
+
 			.authorization-divider {
 				grid-column: 1 / -1;
 				height: 1px;
@@ -347,7 +388,12 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 				display: none;
 			}
 
-			.json-highlight .request-body-input {
+			.request-body-editor.variable-highlight .request-body-highlight {
+				display: block;
+			}
+
+			.json-highlight .request-body-input,
+			.variable-highlight .request-body-input {
 				color: transparent;
 				caret-color: var(--vscode-editor-foreground);
 			}
@@ -417,7 +463,7 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 			.response-panel {
 				margin-top: 12px;
 				border: 1px solid var(--vscode-panel-border);
-				background: var(--vscode-editor-inactiveSelectionBackground);
+				background: transparent;
 			}
 
 			.response-tabs {
@@ -446,7 +492,7 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 			}
 
 			.response-tab.active {
-				background: var(--vscode-editor-inactiveSelectionBackground);
+				background: var(--vscode-editor-background);
 				box-shadow: inset 0 -2px 0 var(--vscode-focusBorder);
 			}
 
@@ -490,7 +536,7 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 			}
 
 			.response-panel-content {
-				min-height: 320px;
+				min-height: 0;
 			}
 
 			.response-content,
@@ -511,7 +557,8 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 			.response-body-content {
 				display: grid;
 				grid-template-columns: auto minmax(0, 1fr);
-				max-height: 48vh;
+				min-height: 72px;
+				max-height: calc(100vh - 320px);
 				overflow: auto;
 				position: relative;
 				--hover-line-height: 0px;
@@ -542,9 +589,14 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 				z-index: 2;
 			}
 
+			.response-headers-content {
+				background: var(--vscode-editor-inactiveSelectionBackground);
+			}
+
 			.response-preview {
 				width: 100%;
-				min-height: 320px;
+				min-height: 72px;
+				max-height: calc(100vh - 320px);
 				border: 0;
 				background: #ffffff;
 				pointer-events: none;
@@ -598,7 +650,7 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 		</label>
 		<label>
 			<span class="sr-only">Request URL</span>
-			<input id="url" name="url" type="url" placeholder="https://api.example.com/resource" aria-label="Request URL">
+			<input id="url" name="url" type="text" placeholder="https://api.example.com/resource" aria-label="Request URL">
 		</label>
 		<button id="send" type="submit">Send</button>
 		</form>
@@ -710,7 +762,7 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 				</div>
 			</div>
 			<div class="response-panel-content hidden" id="headers-panel" role="tabpanel" aria-labelledby="headers-tab">
-				<pre class="response-content" id="response-headers">(none)</pre>
+				<pre class="response-content response-headers-content" id="response-headers">(none)</pre>
 			</div>
 			<div class="response-panel-content hidden" id="raw-panel" role="tabpanel" aria-labelledby="raw-tab">
 				<div class="response-body-content" id="response-raw-content">
@@ -843,16 +895,19 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 				});
 
 				bearerToken.addEventListener('input', () => {
+					updateSecretReferenceState(bearerToken);
 					syncAuthorizationHeader();
 					notifyRequestChanged();
 				});
 
 				basicAuthUsername.addEventListener('input', () => {
+					updateSecretReferenceState(basicAuthUsername);
 					syncAuthorizationHeader();
 					notifyRequestChanged();
 				});
 
 				basicAuthPassword.addEventListener('input', () => {
+					updateSecretReferenceState(basicAuthPassword);
 					syncAuthorizationHeader();
 					notifyRequestChanged();
 				});
@@ -878,12 +933,14 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 				});
 
 				url.addEventListener('input', () => {
+					updateSecretReferenceState(url);
 					renderRequestParamsFromUrl();
 					notifyRequestChanged();
 				});
 
 				requestBody.addEventListener('input', () => {
 					clearRequestBodyMessage();
+					updateSecretReferenceState(requestBody);
 					updateRequestBodyLineNumbers();
 					updateRequestBodyHighlight();
 					notifyRequestChanged();
@@ -990,6 +1047,7 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 						setRequestTitle(message.request.name);
 						method.value = message.request.method;
 						url.value = message.request.url;
+						updateSecretReferenceState(url);
 						renderRequestParamsFromUrl();
 						renderRequestHeaders(message.request.headers || {});
 						readAuthorizationFromHeaders(message.request.headers || {});
@@ -1214,6 +1272,8 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 					valueInput.className = 'request-header-input';
 					valueInput.placeholder = 'Param value';
 					valueInput.value = value;
+					updateSecretReferenceState(nameInput);
+					updateSecretReferenceState(valueInput);
 					removeButton.className = 'request-header-remove';
 					removeButton.type = 'button';
 					removeButton.ariaLabel = 'Remove param';
@@ -1226,10 +1286,12 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 						notifyRequestChanged();
 					});
 					nameInput.addEventListener('input', () => {
+						updateSecretReferenceState(nameInput);
 						updateUrlFromParams();
 						notifyRequestChanged();
 					});
 					valueInput.addEventListener('input', () => {
+						updateSecretReferenceState(valueInput);
 						updateUrlFromParams();
 						notifyRequestChanged();
 					});
@@ -1250,6 +1312,8 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 					actionCell.append(removeButton);
 					row.append(enabledCell, nameCell, valueCell, actionCell);
 					requestParamsTable.append(row);
+					updateSecretReferenceState(nameInput);
+					updateSecretReferenceState(valueInput);
 				}
 
 				function addHeaderRow(name, value, enabled) {
@@ -1274,6 +1338,8 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 					valueInput.className = 'request-header-input';
 					valueInput.placeholder = 'Header value';
 					valueInput.value = value;
+					updateSecretReferenceState(nameInput);
+					updateSecretReferenceState(valueInput);
 					removeButton.className = 'request-header-remove';
 					removeButton.type = 'button';
 					removeButton.ariaLabel = 'Remove header';
@@ -1285,9 +1351,11 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 						notifyRequestChanged();
 					});
 					nameInput.addEventListener('input', () => {
+						updateSecretReferenceState(nameInput);
 						notifyRequestChanged();
 					});
 					valueInput.addEventListener('input', () => {
+						updateSecretReferenceState(valueInput);
 						notifyRequestChanged();
 					});
 					removeButton.addEventListener('click', () => {
@@ -1306,6 +1374,8 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 					actionCell.append(removeButton);
 					row.append(enabledCell, nameCell, valueCell, actionCell);
 					requestHeadersTable.append(row);
+					updateSecretReferenceState(nameInput);
+					updateSecretReferenceState(valueInput);
 				}
 
 				function renderRequestBodyFormRows(body) {
@@ -1338,16 +1408,20 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 					valueInput.className = 'request-header-input';
 					valueInput.placeholder = 'Field value';
 					valueInput.value = value;
+					updateSecretReferenceState(nameInput);
+					updateSecretReferenceState(valueInput);
 					removeButton.className = 'request-header-remove';
 					removeButton.type = 'button';
 					removeButton.ariaLabel = 'Remove form pair';
 					removeButton.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>';
 
 					nameInput.addEventListener('input', () => {
+						updateSecretReferenceState(nameInput);
 						syncRequestBodyFromFormRows();
 						notifyRequestChanged();
 					});
 					valueInput.addEventListener('input', () => {
+						updateSecretReferenceState(valueInput);
 						syncRequestBodyFromFormRows();
 						notifyRequestChanged();
 					});
@@ -1367,6 +1441,8 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 					actionCell.append(removeButton);
 					row.append(nameCell, valueCell, actionCell);
 					requestBodyFormTable.append(row);
+					updateSecretReferenceState(nameInput);
+					updateSecretReferenceState(valueInput);
 				}
 
 				function syncRequestBodyFromFormRows() {
@@ -1474,6 +1550,8 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 					}
 
 					applyAuthorizationType();
+					updateAuthorizationSecretStates();
+					syncAuthorizationHeader();
 				}
 
 				function applyAuthorizationType() {
@@ -1481,28 +1559,119 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 					const showBasicAuth = authorizationType.value === 'basic';
 
 					bearerAuthorizationFields.forEach((field) => {
-						field.classList.toggle('hidden', !showBearerToken);
+						setAuthorizationFieldHidden(field, !showBearerToken);
 					});
 
 					basicAuthorizationFields.forEach((field) => {
-						field.classList.toggle('hidden', !showBasicAuth);
+						setAuthorizationFieldHidden(field, !showBasicAuth);
 					});
+				}
+
+				function setAuthorizationFieldHidden(field, hidden) {
+					field.classList.toggle('hidden', hidden);
+
+					if (field.parentElement?.classList.contains('variable-input-wrapper')) {
+						field.parentElement.classList.toggle('hidden', hidden);
+					}
 				}
 
 				function syncAuthorizationHeader() {
 					activeAuthorizationType = authorizationType.value;
+					const headerValue = readAuthorizationHeaderValue();
 
-					if (authorizationType.value === 'bearer' && bearerToken.value) {
-						setHeaderValue('Authorization', 'Bearer ' + bearerToken.value);
-						return;
-					}
-
-					if (authorizationType.value === 'basic' && (basicAuthUsername.value || basicAuthPassword.value)) {
-						setHeaderValue('Authorization', 'Basic ' + encodeBase64(basicAuthUsername.value + ':' + basicAuthPassword.value));
+					if (headerValue) {
+						setHeaderValue('Authorization', readAuthorizationHeaderDisplayValue(headerValue));
 						return;
 					}
 
 					removeHeaderValue('Authorization');
+				}
+
+				function readAuthorizationHeaderValue() {
+					if (authorizationType.value === 'bearer' && bearerToken.value) {
+						return 'Bearer ' + bearerToken.value;
+					}
+
+					if (authorizationType.value === 'basic' && (basicAuthUsername.value || basicAuthPassword.value)) {
+						return 'Basic ' + encodeBase64(basicAuthUsername.value + ':' + basicAuthPassword.value);
+					}
+
+					return '';
+				}
+
+				function readAuthorizationHeaderDisplayValue(headerValue) {
+					if (authorizationType.value === 'bearer' && hasVariableReference(bearerToken.value)) {
+						return 'Bearer ***';
+					}
+
+					if (
+						authorizationType.value === 'basic'
+						&& (hasVariableReference(basicAuthUsername.value) || hasVariableReference(basicAuthPassword.value))
+					) {
+						return 'Basic ***';
+					}
+
+					return headerValue;
+				}
+
+				function hasVariableReference(value) {
+					return /\{\{\s*[A-Za-z_][A-Za-z0-9_]*\s*\}\}/.test(value);
+				}
+
+				function updateSecretReferenceState(element) {
+					if (element === requestBody) {
+						requestBodyEditor.classList.toggle(
+							'variable-highlight',
+							!requestBodyEditor.classList.contains('json-highlight') && hasVariableReference(element.value),
+						);
+						return;
+					}
+
+					const wrapper = readVariableInputWrapper(element);
+
+					if (!wrapper) {
+						return;
+					}
+
+					const overlay = wrapper.querySelector('.variable-highlight-overlay');
+					const hasSecretReference = hasVariableReference(element.value);
+
+					wrapper.classList.toggle('has-secret-reference', hasSecretReference);
+					overlay.innerHTML = hasSecretReference ? formatSecretHighlight(element.value) : '';
+				}
+
+				function updateAuthorizationSecretStates() {
+					updateSecretReferenceState(bearerToken);
+					updateSecretReferenceState(basicAuthUsername);
+					updateSecretReferenceState(basicAuthPassword);
+				}
+
+				function readVariableInputWrapper(element) {
+					if (element.parentElement?.classList.contains('variable-input-wrapper')) {
+						return element.parentElement;
+					}
+
+					if (!element.parentElement) {
+						return undefined;
+					}
+
+					const wrapper = document.createElement('span');
+					const overlay = document.createElement('span');
+
+					wrapper.className = 'variable-input-wrapper';
+					overlay.className = 'variable-highlight-overlay';
+					element.parentElement.insertBefore(wrapper, element);
+					wrapper.append(overlay, element);
+					wrapper.classList.toggle('hidden', element.classList.contains('hidden'));
+
+					return wrapper;
+				}
+
+				function formatSecretHighlight(content) {
+					return escapeHtml(content).replace(
+						/\{\{\s*[A-Za-z_][A-Za-z0-9_]*\s*\}\}/g,
+						(match) => '<span class="secret-reference">' + match + '</span>',
+					);
 				}
 
 				function readBasicAuthorizationCredentials(encodedCredentials) {
@@ -1637,6 +1806,8 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 					enabledInput.checked = true;
 					inputs[0].value = name;
 					inputs[1].value = value;
+					updateSecretReferenceState(inputs[0]);
+					updateSecretReferenceState(inputs[1]);
 					updateRequestRowEnabledState(row, true);
 				}
 
@@ -1707,11 +1878,19 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 						const name = inputs[0].value.trim();
 
 						if ((!onlyEnabled || enabledInput.checked) && name) {
-							values[name] = inputs[1].value;
+							values[name] = readHeaderRowValue(name, inputs[1].value);
 						}
 					}
 
 					return values;
+				}
+
+				function readHeaderRowValue(name, value) {
+					if (name.toLowerCase() === 'authorization') {
+						return readAuthorizationHeaderValue() || value;
+					}
+
+					return value;
 				}
 
 				function readRequestParams() {
@@ -1821,6 +2000,7 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 
 				function setRequestBodyContent(content) {
 					requestBody.value = content;
+					updateSecretReferenceState(requestBody);
 					updateRequestBodyLineNumbers();
 					updateRequestBodyHighlight();
 				}
@@ -1830,8 +2010,16 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 				}
 
 				function updateRequestBodyHighlight() {
+					requestBodyEditor.classList.remove('variable-highlight');
+
 					if (!requestBodyEditor.classList.contains('json-highlight')) {
-						requestBodyHighlight.textContent = '';
+						if (hasVariableReference(requestBody.value)) {
+							requestBodyEditor.classList.add('variable-highlight');
+							requestBodyHighlight.innerHTML = formatSecretHighlight(requestBody.value || ' ');
+						} else {
+							requestBodyHighlight.textContent = '';
+						}
+
 						return;
 					}
 
