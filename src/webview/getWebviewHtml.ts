@@ -837,6 +837,7 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 				let requestTimer = undefined;
 				let latestRequestUrl = '';
 				let activeAuthorizationType = 'none';
+				let activeRequestBodyType = 'raw';
 				renderRequestParamsFromUrl();
 				renderRequestHeaders({});
 
@@ -882,9 +883,10 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 
 				requestBodyType.addEventListener('change', () => {
 					clearRequestBodyMessage();
+					activeRequestBodyType = requestBodyType.value;
+					applyRequestBodyType(requestBodyType.value);
 					setRequestBodyContent('');
 					renderRequestBodyFormRows('');
-					applyRequestBodyType(requestBodyType.value);
 					notifyRequestChanged();
 				});
 
@@ -1055,7 +1057,7 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 							? ''
 							: formatBody(message.request.body));
 						renderRequestBodyFormRows(requestBody.value);
-						setRequestBodyType(inferRequestBodyType(message.request.headers || {}, requestBody.value));
+						setRequestBodyType(inferRequestBodyType(message.request.headers || {}, requestBody.value, activeRequestBodyType));
 				}
 			});
 
@@ -1514,7 +1516,7 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 
 					if (contentType) {
 						setHeaderValue('Content-Type', contentType);
-					} else if (nextType === 'none') {
+					} else if (nextType === 'none' || nextType === 'raw') {
 						removeHeaderValue('Content-Type');
 					}
 				}
@@ -1726,7 +1728,7 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 					return placeholders[nextType] || '';
 				}
 
-				function inferRequestBodyType(headers, body) {
+				function inferRequestBodyType(headers, body, fallbackType) {
 					const contentType = readHeaderValue(headers, 'Content-Type').toLowerCase();
 
 					if (contentType.includes('application/json')) {
@@ -1750,7 +1752,7 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 					}
 
 					if (!body) {
-						return 'none';
+						return fallbackType;
 					}
 
 					return 'raw';
