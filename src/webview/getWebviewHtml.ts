@@ -1465,7 +1465,6 @@ export function getWebviewHtml(webview: vscode.Webview, extensionVersion: string
 
 					enabledInput.addEventListener('change', () => {
 						updateRequestRowEnabledState(row, enabledInput.checked);
-						updateUrlFromParams();
 						notifyRequestChanged();
 					});
 					nameInput.addEventListener('input', () => {
@@ -2077,7 +2076,7 @@ export function getWebviewHtml(webview: vscode.Webview, extensionVersion: string
 				}
 
 				function readRequestParams() {
-					return readParamRows(true);
+					return readParamRows(false);
 				}
 
 				function readEnabledRequestUrl() {
