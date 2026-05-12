@@ -3,6 +3,7 @@
   "displayName": "api-companion",
   "description": "Create, manage, and execute API requests from file-based definitions using a Postman-like interface inside Visual Studio Code.",
   "version": "0.0.1",
+  "icon": "media/icon-gear-clean.png",
   "repository": {
     "type": "git",
     "url": "https://github.com/nickchecan/api-companion.git"

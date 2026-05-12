@@ -24,6 +24,7 @@ module.exports = {
 			'@semantic-release/exec',
 			{
 				prepareCmd: 'npm run package && vsce package --out dist/api-companion-${nextRelease.version}.vsix',
+				publishCmd: 'vsce publish --packagePath dist/api-companion-${nextRelease.version}.vsix --pat "$VSCE_PAT"',
 			},
 		],
 		[

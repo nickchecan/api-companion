@@ -7,7 +7,7 @@ API Companion brings a Postman-like request workflow directly into Visual Studio
 Because requests live in your workspace, they can be reviewed, shared, versioned, and kept next to the code that depends on them. API Companion is especially useful when you want lightweight endpoint testing, team-friendly request definitions, and environment-based values without maintaining a separate API client collection.
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/nickchecan/api-companion/main/assets/demo.gif" alt="API Companion demo" width="860">
+  <img src="assets/demo.gif" alt="API Companion demo" width="860">
 </p>
 
 ## Features
