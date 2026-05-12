@@ -91,6 +91,24 @@ npm test
 
 Tests live outside `src` in the top-level `test/` folder. Imports from tests should reference source modules through `../src/...`.
 
+## Release and Publishing
+
+Publishing is handled by semantic-release through `.github/workflows/release.yml`.
+
+- The release workflow runs on pushes to `main`.
+- `release.config.cjs` uses the Angular conventional commit preset.
+- Use `fix:` for patch releases and `feat:` for minor releases.
+- Use a breaking-change footer or `!` marker only when a major release is intended.
+- `docs:`, `chore:`, and other non-release commit types usually do not trigger publishing.
+- The release job verifies, packages, creates a `.vsix`, publishes with `vsce`, and requires the `VSCE_PAT` secret.
+- To test the Marketplace token locally without publishing, run:
+
+```sh
+npx vsce verify-pat --pat "$VSCE_PAT" nickchecan
+```
+
+Do not commit, push, publish, or package a `.vsix` unless explicitly requested.
+
 ## Launch and Debug
 
 Use VS Code's `Run Extension` launch configuration in `.vscode/launch.json`.
