@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 
 import { parseRequestFile } from '../request/requestFile';
 import { HttpMethod, isHttpMethod, RequestFileDefinition } from '../request/types';
+import { isRecord } from '../shared/object';
 import {
 	executeRequestWithEnvironment,
 	initializeRequestWebview,
@@ -139,7 +140,7 @@ function readDraftRequestDocument(content: string): RequestFileDefinition {
 }
 
 function readDraftHeaders(headers: unknown): Record<string, string> {
-	if (!headers || typeof headers !== 'object' || Array.isArray(headers)) {
+	if (!isRecord(headers)) {
 		return {};
 	}
 
@@ -158,8 +159,8 @@ function readDocumentObject(content: string): Record<string, unknown> {
 	try {
 		const parsed = JSON.parse(content);
 
-		if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
-			return parsed as Record<string, unknown>;
+		if (isRecord(parsed)) {
+			return parsed;
 		}
 	} catch {
 		return {};

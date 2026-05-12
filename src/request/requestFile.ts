@@ -1,4 +1,5 @@
 import { HttpMethod, isHttpMethod, RequestFileDefinition, supportedMethods } from './types';
+import { isRecord } from '../shared/object';
 
 export function parseRequestFile(content: string): RequestFileDefinition {
 	let parsed: unknown;
@@ -90,8 +91,4 @@ function readHeaders(value: Record<string, unknown>): Record<string, string> {
 	}
 
 	return normalized;
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-	return typeof value === 'object' && value !== null && !Array.isArray(value);
 }

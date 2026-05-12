@@ -3,6 +3,7 @@ import * as vscode from 'vscode';
 import { parseEnvFile, resolveRequestVariables } from '../request/environment';
 import { executeRequest } from '../request/requestRunner';
 import { ApiResponse, RequestFileDefinition } from '../request/types';
+import { isRecord, isStringRecord } from '../shared/object';
 import { getWebviewHtml } from './getWebviewHtml';
 
 export interface SendRequestMessage {
@@ -157,7 +158,7 @@ function isFileNotFoundError(error: unknown): boolean {
 }
 
 function isSendRequestMessage(message: unknown): message is SendRequestMessage {
-	if (!message || typeof message !== 'object') {
+	if (!isRecord(message)) {
 		return false;
 	}
 
@@ -171,7 +172,7 @@ function isSendRequestMessage(message: unknown): message is SendRequestMessage {
 }
 
 function isWebviewReadyMessage(message: unknown): message is WebviewReadyMessage {
-	if (!message || typeof message !== 'object') {
+	if (!isRecord(message)) {
 		return false;
 	}
 
@@ -181,7 +182,7 @@ function isWebviewReadyMessage(message: unknown): message is WebviewReadyMessage
 }
 
 function isOpenRepositoryMessage(message: unknown): message is OpenRepositoryMessage {
-	if (!message || typeof message !== 'object') {
+	if (!isRecord(message)) {
 		return false;
 	}
 
@@ -191,7 +192,7 @@ function isOpenRepositoryMessage(message: unknown): message is OpenRepositoryMes
 }
 
 function isOpenIssuesMessage(message: unknown): message is OpenIssuesMessage {
-	if (!message || typeof message !== 'object') {
+	if (!isRecord(message)) {
 		return false;
 	}
 
@@ -201,7 +202,7 @@ function isOpenIssuesMessage(message: unknown): message is OpenIssuesMessage {
 }
 
 function isRequestChangedMessage(message: unknown): message is RequestChangedMessage {
-	if (!message || typeof message !== 'object') {
+	if (!isRecord(message)) {
 		return false;
 	}
 
@@ -213,12 +214,4 @@ function isRequestChangedMessage(message: unknown): message is RequestChangedMes
 		&& typeof candidate.url === 'string'
 		&& typeof candidate.body === 'string'
 		&& isStringRecord(candidate.headers);
-}
-
-function isStringRecord(value: unknown): value is Record<string, string> {
-	if (!value || typeof value !== 'object' || Array.isArray(value)) {
-		return false;
-	}
-
-	return Object.values(value).every((item) => typeof item === 'string');
 }
