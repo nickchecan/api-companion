@@ -1188,8 +1188,17 @@ export function getWebviewHtml(webview: vscode.Webview, extensionVersion: string
 						method.value = message.request.method;
 						url.value = message.request.url;
 						updateSecretReferenceState(url);
-						renderRequestParamsFromUrl();
-						renderRequestHeaders(message.request.headers || {});
+						if (Array.isArray(message.request.params)) {
+							renderRequestParams(message.request.params);
+							updateUrlFromParams();
+						} else {
+							renderRequestParamsFromUrl();
+						}
+						if (Array.isArray(message.request.headerState)) {
+							renderRequestHeaderState(message.request.headerState);
+						} else {
+							renderRequestHeaders(message.request.headers || {});
+						}
 						readAuthorizationFromHeaders(message.request.headers || {});
 						setRequestBodyContent(message.request.body === null || message.request.body === undefined
 							? ''
@@ -1397,31 +1406,44 @@ export function getWebviewHtml(webview: vscode.Webview, extensionVersion: string
 				}
 
 				function renderRequestParamsFromUrl() {
+					renderRequestParams(readParamsFromUrl().map(([name, value]) => ({
+						name,
+						value,
+						enabled: true,
+					})));
+				}
+
+				function renderRequestParams(params) {
 					requestParamsTable.textContent = '';
 
-					const entries = readParamsFromUrl();
-
-					if (entries.length === 0) {
+					if (params.length === 0) {
 						addRequestParamRow('', '');
 						return;
 					}
 
-					for (const [name, value] of entries) {
-						addRequestParamRow(name, value);
+					for (const param of params) {
+						addParamRow(param.name, param.value, param.enabled);
 					}
 				}
 
 				function renderRequestHeaders(headers) {
-					requestHeadersTable.textContent = '';
-					const entries = Object.entries(headers);
+					renderRequestHeaderState(Object.entries(headers).map(([name, value]) => ({
+						name,
+						value,
+						enabled: true,
+					})));
+				}
 
-					if (entries.length === 0) {
+				function renderRequestHeaderState(headerState) {
+					requestHeadersTable.textContent = '';
+
+					if (headerState.length === 0) {
 						addRequestHeaderRow('', '');
 						return;
 					}
 
-					for (const [name, value] of entries) {
-						addRequestHeaderRow(name, value);
+					for (const header of headerState) {
+						addHeaderRow(header.name, header.value, header.enabled);
 					}
 				}
 
@@ -1465,6 +1487,7 @@ export function getWebviewHtml(webview: vscode.Webview, extensionVersion: string
 
 					enabledInput.addEventListener('change', () => {
 						updateRequestRowEnabledState(row, enabledInput.checked);
+						updateUrlFromParams();
 						notifyRequestChanged();
 					});
 					nameInput.addEventListener('input', () => {
@@ -1984,13 +2007,13 @@ export function getWebviewHtml(webview: vscode.Webview, extensionVersion: string
 
 					const enabledInput = row.querySelector('.request-header-enabled');
 					const inputs = row.querySelectorAll('.request-header-input');
+					const enabled = enabledInput.checked;
 
-					enabledInput.checked = true;
 					inputs[0].value = name;
 					inputs[1].value = value;
 					updateSecretReferenceState(inputs[0]);
 					updateSecretReferenceState(inputs[1]);
-					updateRequestRowEnabledState(row, true);
+					updateRequestRowEnabledState(row, enabled);
 				}
 
 				function removeHeaderValue(name) {
@@ -2047,6 +2070,26 @@ export function getWebviewHtml(webview: vscode.Webview, extensionVersion: string
 					return readHeaderRows(false);
 				}
 
+				function readRequestHeaderState() {
+					const values = [];
+
+					for (const row of requestHeadersTable.querySelectorAll('tr')) {
+						const enabledInput = row.querySelector('.request-header-enabled');
+						const inputs = row.querySelectorAll('.request-header-input');
+						const name = inputs[0].value.trim();
+
+						if (name) {
+							values.push({
+								name,
+								value: readHeaderRowValue(name, inputs[1].value),
+								enabled: enabledInput.checked,
+							});
+						}
+					}
+
+					return values;
+				}
+
 				function readEnabledRequestHeaders() {
 					return readHeaderRows(true);
 				}
@@ -2075,8 +2118,24 @@ export function getWebviewHtml(webview: vscode.Webview, extensionVersion: string
 					return value;
 				}
 
-				function readRequestParams() {
-					return readParamRows(false);
+				function readRequestParamState() {
+					const values = [];
+
+					for (const row of requestParamsTable.querySelectorAll('tr')) {
+						const enabledInput = row.querySelector('.request-header-enabled');
+						const inputs = row.querySelectorAll('.request-header-input');
+						const name = inputs[0].value.trim();
+
+						if (name) {
+							values.push({
+								name,
+								value: inputs[1].value,
+								enabled: enabledInput.checked,
+							});
+						}
+					}
+
+					return values;
 				}
 
 				function readEnabledRequestUrl() {
@@ -2130,7 +2189,7 @@ export function getWebviewHtml(webview: vscode.Webview, extensionVersion: string
 
 					parsed.search = '';
 
-					for (const [name, value] of readRequestParams()) {
+					for (const [name, value] of readParamRows(true)) {
 						parsed.searchParams.append(name, value);
 					}
 
@@ -2143,6 +2202,8 @@ export function getWebviewHtml(webview: vscode.Webview, extensionVersion: string
 						name: requestTitle.textContent || 'Untitled Request',
 						method: method.value,
 						url: url.value,
+						params: readRequestParamState(),
+						headerState: readRequestHeaderState(),
 						headers: readRequestHeaders(),
 						body: readRequestBodyForSend(),
 					});

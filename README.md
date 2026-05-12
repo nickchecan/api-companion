@@ -44,10 +44,35 @@ Example request file:
 {
   "name": "Get user profile",
   "method": "GET",
-  "url": "https://api.example.com/users/{{USER_ID}}",
+  "url": "https://api.example.com/users/{{USER_ID}}?include=settings",
+  "params": [
+    {
+      "name": "include",
+      "value": "settings",
+      "enabled": true
+    },
+    {
+      "name": "debug",
+      "value": "1",
+      "enabled": false
+    }
+  ],
+  "headerState": [
+    {
+      "name": "Authorization",
+      "value": "Bearer {{API_TOKEN}}",
+      "enabled": true
+    },
+    {
+      "name": "X-Debug",
+      "value": "1",
+      "enabled": false
+    }
+  ],
   "headers": {
     "Authorization": "Bearer {{API_TOKEN}}",
-    "Accept": "application/json"
+    "Accept": "application/json",
+    "X-Debug": "1"
   },
   "body": null
 }
@@ -62,8 +87,14 @@ Request files use the `.api.json` extension and support:
 | `name` | Yes | Human-readable request name. |
 | `method` | Yes | One of `GET`, `POST`, `PUT`, `PATCH`, `DELETE`, `HEAD`, or `OPTIONS`. |
 | `url` | Yes | An `http` or `https` URL. |
+| `params` | No | Array of query parameters with `name`, `value`, and `enabled` fields. Disabled params stay in the editor but are omitted from the sent URL. |
+| `headerState` | No | Array of headers with `name`, `value`, and `enabled` fields. Disabled headers stay in the editor but are omitted when sending the request. |
 | `headers` | No | JSON object where each header value is a string. |
 | `body` | No | Any JSON value. Use `null` when the request does not need a body. |
+
+When `params` is omitted, RestCraft backfills enabled params from the query string in `url` for compatibility with older request files. After editing query params in the custom editor, RestCraft saves the `params` array so enabled and disabled states are remembered when the request is reopened.
+
+When `headerState` is omitted, RestCraft backfills enabled header rows from `headers` for compatibility with older request files. After editing headers in the custom editor, RestCraft saves `headerState` so enabled and disabled header states are remembered when the request is reopened.
 
 ## Environment Variables
 
@@ -84,6 +115,19 @@ You can use variables in URLs, headers, and request bodies:
   "name": "Create project",
   "method": "POST",
   "url": "{{BASE_URL}}/projects",
+  "params": [],
+  "headerState": [
+    {
+      "name": "Authorization",
+      "value": "Bearer {{API_TOKEN}}",
+      "enabled": true
+    },
+    {
+      "name": "Content-Type",
+      "value": "application/json",
+      "enabled": true
+    }
+  ],
   "headers": {
     "Authorization": "Bearer {{API_TOKEN}}",
     "Content-Type": "application/json"
