@@ -4,7 +4,7 @@
   "description": "Create, manage, and execute API requests from file-based definitions using a Postman-like interface inside Visual Studio Code.",
   "version": "0.0.1",
   "publisher": "nickchecan",
-  "icon": "media/icon-gear-clean.png",
+  "icon": "media/icon-gear-clean-transparent.png",
   "repository": {
     "type": "git",
     "url": "https://github.com/nickchecan/restcraft.git"
