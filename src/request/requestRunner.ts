@@ -25,10 +25,16 @@ export async function executeRequest(request: ApiRequest): Promise<ApiResponse> 
 	};
 }
 
+/**
+ * Determines whether the HTTP method may carry the provided body.
+ */
 function shouldSendBody(method: string, body: string | undefined): body is string {
 	return method !== 'GET' && method !== 'HEAD' && body !== undefined && body.length > 0;
 }
 
+/**
+ * Normalizes and validates an HTTP method before `fetch` sees it.
+ */
 function normalizeMethod(method: string): string {
 	const normalized = method.trim().toUpperCase();
 
@@ -39,6 +45,9 @@ function normalizeMethod(method: string): string {
 	return normalized;
 }
 
+/**
+ * Normalizes and validates a request URL before network execution.
+ */
 function normalizeUrl(url: string): string {
 	const trimmed = url.trim();
 

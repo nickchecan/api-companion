@@ -16,6 +16,9 @@ export class ApiWorkbenchPanel {
 	private readonly panel: vscode.WebviewPanel;
 	private requestUri: vscode.Uri | undefined;
 
+	/**
+	 * Creates the panel wrapper and connects request execution callbacks.
+	 */
 	private constructor(panel: vscode.WebviewPanel, extensionVersion: string) {
 		this.panel = panel;
 		initializeRequestWebview(this.panel.webview, {
@@ -28,6 +31,9 @@ export class ApiWorkbenchPanel {
 		});
 	}
 
+	/**
+	 * Reveals the existing workbench panel or creates it on first use.
+	 */
 	public static createOrShow(extensionUri: vscode.Uri, extensionVersion: string): ApiWorkbenchPanel {
 		if (ApiWorkbenchPanel.currentPanel) {
 			ApiWorkbenchPanel.currentPanel.panel.reveal(vscode.ViewColumn.One);
@@ -48,6 +54,9 @@ export class ApiWorkbenchPanel {
 		return ApiWorkbenchPanel.currentPanel;
 	}
 
+	/**
+	 * Loads a request into the workbench and remembers its source URI.
+	 */
 	public async loadRequest(request: RequestFileDefinition, requestUri?: vscode.Uri): Promise<void> {
 		this.requestUri = requestUri;
 		await loadRequestInWebview(this.panel.webview, request);

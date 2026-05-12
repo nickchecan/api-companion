@@ -123,6 +123,9 @@ function resolveHeaderValue(
 	return `Basic ${encodeBase64(resolvedCredentials)}`;
 }
 
+/**
+ * Replaces all variable placeholders and records unresolved names.
+ */
 function resolveVariables(value: string, variables: Record<string, string>, missing: Set<string>): string {
 	return value.replace(variablePattern, (_match, name: string) => {
 		if (Object.prototype.hasOwnProperty.call(variables, name)) {
@@ -134,6 +137,9 @@ function resolveVariables(value: string, variables: Record<string, string>, miss
 	});
 }
 
+/**
+ * Detects whether headers declare a form URL encoded request body.
+ */
 function isFormUrlEncoded(headers: Record<string, string>): boolean {
 	for (const [name, value] of Object.entries(headers)) {
 		if (name.toLowerCase() === 'content-type') {
@@ -144,6 +150,9 @@ function isFormUrlEncoded(headers: Record<string, string>): boolean {
 	return false;
 }
 
+/**
+ * Removes matching surrounding quotes from `.env` values.
+ */
 function unquoteEnvValue(value: string): string {
 	if (value.length < 2) {
 		return value;
@@ -159,10 +168,16 @@ function unquoteEnvValue(value: string): string {
 	return value;
 }
 
+/**
+ * Encodes UTF-8 text for Basic auth credentials.
+ */
 function encodeBase64(value: string): string {
 	return Buffer.from(value, 'utf8').toString('base64');
 }
 
+/**
+ * Decodes UTF-8 Basic auth credentials.
+ */
 function decodeBase64(value: string): string {
 	return Buffer.from(value, 'base64').toString('utf8');
 }
