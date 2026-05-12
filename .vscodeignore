@@ -1,8 +1,13 @@
 .vscode/**
 .vscode-test/**
+.github/**
 out/**
 node_modules/**
 src/**
+.agents/**
+.codex/**
+AGENTS.md
+release.config.cjs
 .gitignore
 .yarnrc
 esbuild.js
@@ -12,3 +17,4 @@ vsc-extension-quickstart.md
 **/*.map
 **/*.ts
 **/.vscode-test.*
+examples/**/.env
