@@ -1,6 +1,6 @@
 import * as assert from 'assert';
 
-import { isRequestFileName, parseRequestFile } from '../request/requestFile';
+import { isRequestFileName, parseRequestFile } from '../src/request/requestFile';
 
 suite('Request file parser', () => {
 	test('parses a valid request file', () => {

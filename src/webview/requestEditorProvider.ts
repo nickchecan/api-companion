@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 
 import { parseRequestFile } from '../request/requestFile';
 import { HttpMethod, isHttpMethod, RequestFileDefinition } from '../request/types';
+import { isRecord } from '../shared/object';
 import {
 	executeRequestWithEnvironment,
 	initializeRequestWebview,
@@ -12,12 +13,15 @@ import {
 export class RequestEditorProvider implements vscode.CustomTextEditorProvider {
 	public static readonly viewType = 'api-companion.requestEditor';
 
-	public constructor(private readonly extensionUri: vscode.Uri) {}
+	public constructor(
+		private readonly extensionUri: vscode.Uri,
+		private readonly extensionVersion: string,
+	) {}
 
-	public static register(context: vscode.ExtensionContext): vscode.Disposable {
+	public static register(context: vscode.ExtensionContext, extensionVersion: string): vscode.Disposable {
 		return vscode.window.registerCustomEditorProvider(
 			RequestEditorProvider.viewType,
-			new RequestEditorProvider(context.extensionUri),
+			new RequestEditorProvider(context.extensionUri, extensionVersion),
 			{
 				webviewOptions: {
 					retainContextWhenHidden: true,
@@ -38,6 +42,7 @@ export class RequestEditorProvider implements vscode.CustomTextEditorProvider {
 
 		let pendingDocumentText: string | undefined;
 		const messageSubscription = initializeRequestWebview(webviewPanel.webview, {
+			extensionVersion: this.extensionVersion,
 			onReady: () => {
 				void this.loadDocument(webviewPanel, document);
 			},
@@ -135,7 +140,7 @@ function readDraftRequestDocument(content: string): RequestFileDefinition {
 }
 
 function readDraftHeaders(headers: unknown): Record<string, string> {
-	if (!headers || typeof headers !== 'object' || Array.isArray(headers)) {
+	if (!isRecord(headers)) {
 		return {};
 	}
 
@@ -154,8 +159,8 @@ function readDocumentObject(content: string): Record<string, unknown> {
 	try {
 		const parsed = JSON.parse(content);
 
-		if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
-			return parsed as Record<string, unknown>;
+		if (isRecord(parsed)) {
+			return parsed;
 		}
 	} catch {
 		return {};

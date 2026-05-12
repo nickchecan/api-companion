@@ -9,9 +9,10 @@ export class ApiWorkbenchPanel {
 	private readonly panel: vscode.WebviewPanel;
 	private requestUri: vscode.Uri | undefined;
 
-	private constructor(panel: vscode.WebviewPanel) {
+	private constructor(panel: vscode.WebviewPanel, extensionVersion: string) {
 		this.panel = panel;
 		initializeRequestWebview(this.panel.webview, {
+			extensionVersion,
 			onSendRequest: (message) => executeRequestWithEnvironment(message, this.requestUri),
 		});
 
@@ -20,7 +21,7 @@ export class ApiWorkbenchPanel {
 		});
 	}
 
-	public static createOrShow(extensionUri: vscode.Uri): ApiWorkbenchPanel {
+	public static createOrShow(extensionUri: vscode.Uri, extensionVersion: string): ApiWorkbenchPanel {
 		if (ApiWorkbenchPanel.currentPanel) {
 			ApiWorkbenchPanel.currentPanel.panel.reveal(vscode.ViewColumn.One);
 			return ApiWorkbenchPanel.currentPanel;
@@ -36,7 +37,7 @@ export class ApiWorkbenchPanel {
 			},
 		);
 
-		ApiWorkbenchPanel.currentPanel = new ApiWorkbenchPanel(panel);
+		ApiWorkbenchPanel.currentPanel = new ApiWorkbenchPanel(panel, extensionVersion);
 		return ApiWorkbenchPanel.currentPanel;
 	}
 

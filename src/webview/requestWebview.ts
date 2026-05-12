@@ -3,6 +3,7 @@ import * as vscode from 'vscode';
 import { parseEnvFile, resolveRequestVariables } from '../request/environment';
 import { executeRequest } from '../request/requestRunner';
 import { ApiResponse, RequestFileDefinition } from '../request/types';
+import { isRecord, isStringRecord } from '../shared/object';
 import { getWebviewHtml } from './getWebviewHtml';
 
 export interface SendRequestMessage {
@@ -17,6 +18,14 @@ interface WebviewReadyMessage {
 	type: 'webviewReady';
 }
 
+interface OpenRepositoryMessage {
+	type: 'openRepository';
+}
+
+interface OpenIssuesMessage {
+	type: 'openIssues';
+}
+
 export interface RequestChangedMessage {
 	type: 'requestChanged';
 	name: string;
@@ -27,6 +36,7 @@ export interface RequestChangedMessage {
 }
 
 export interface RequestWebviewHandlers {
+	extensionVersion?: string;
 	onReady?: () => void;
 	onRequestChanged?: (message: RequestChangedMessage) => void;
 	onSendRequest?: (message: SendRequestMessage) => Promise<ApiResponse>;
@@ -40,7 +50,7 @@ export function initializeRequestWebview(
 		? { onReady: handlersOrOnReady }
 		: handlersOrOnReady ?? {};
 
-	webview.html = getWebviewHtml(webview);
+	webview.html = getWebviewHtml(webview, handlers.extensionVersion ?? '0.0.0');
 
 	return webview.onDidReceiveMessage((message: unknown) => {
 		if (isWebviewReadyMessage(message)) {
@@ -50,6 +60,16 @@ export function initializeRequestWebview(
 
 		if (isRequestChangedMessage(message)) {
 			handlers.onRequestChanged?.(message);
+			return;
+		}
+
+		if (isOpenRepositoryMessage(message)) {
+			void vscode.env.openExternal(vscode.Uri.parse('https://github.com/nickchecan/api-companion'));
+			return;
+		}
+
+		if (isOpenIssuesMessage(message)) {
+			void vscode.env.openExternal(vscode.Uri.parse('https://github.com/nickchecan/api-companion/issues'));
 			return;
 		}
 
@@ -138,7 +158,7 @@ function isFileNotFoundError(error: unknown): boolean {
 }
 
 function isSendRequestMessage(message: unknown): message is SendRequestMessage {
-	if (!message || typeof message !== 'object') {
+	if (!isRecord(message)) {
 		return false;
 	}
 
@@ -152,7 +172,7 @@ function isSendRequestMessage(message: unknown): message is SendRequestMessage {
 }
 
 function isWebviewReadyMessage(message: unknown): message is WebviewReadyMessage {
-	if (!message || typeof message !== 'object') {
+	if (!isRecord(message)) {
 		return false;
 	}
 
@@ -161,8 +181,28 @@ function isWebviewReadyMessage(message: unknown): message is WebviewReadyMessage
 	return candidate.type === 'webviewReady';
 }
 
+function isOpenRepositoryMessage(message: unknown): message is OpenRepositoryMessage {
+	if (!isRecord(message)) {
+		return false;
+	}
+
+	const candidate = message as Partial<OpenRepositoryMessage>;
+
+	return candidate.type === 'openRepository';
+}
+
+function isOpenIssuesMessage(message: unknown): message is OpenIssuesMessage {
+	if (!isRecord(message)) {
+		return false;
+	}
+
+	const candidate = message as Partial<OpenIssuesMessage>;
+
+	return candidate.type === 'openIssues';
+}
+
 function isRequestChangedMessage(message: unknown): message is RequestChangedMessage {
-	if (!message || typeof message !== 'object') {
+	if (!isRecord(message)) {
 		return false;
 	}
 
@@ -174,12 +214,4 @@ function isRequestChangedMessage(message: unknown): message is RequestChangedMes
 		&& typeof candidate.url === 'string'
 		&& typeof candidate.body === 'string'
 		&& isStringRecord(candidate.headers);
-}
-
-function isStringRecord(value: unknown): value is Record<string, string> {
-	if (!value || typeof value !== 'object' || Array.isArray(value)) {
-		return false;
-	}
-
-	return Object.values(value).every((item) => typeof item === 'string');
 }
