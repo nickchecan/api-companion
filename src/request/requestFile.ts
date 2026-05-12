@@ -50,6 +50,9 @@ export function isRequestFileName(fileName: string): boolean {
 	return fileName.endsWith('.api.json');
 }
 
+/**
+ * Reads a required non-empty string property from parsed JSON.
+ */
 function readRequiredString(value: Record<string, unknown>, property: string): string {
 	const candidate = value[property];
 
@@ -60,6 +63,9 @@ function readRequiredString(value: Record<string, unknown>, property: string): s
 	return candidate.trim();
 }
 
+/**
+ * Reads and validates the HTTP method property.
+ */
 function readMethod(value: Record<string, unknown>): HttpMethod {
 	const method = readRequiredString(value, 'method').toUpperCase();
 
@@ -70,6 +76,9 @@ function readMethod(value: Record<string, unknown>): HttpMethod {
 	return method as HttpMethod;
 }
 
+/**
+ * Reads, validates, and serializes the request URL.
+ */
 function readUrl(value: Record<string, unknown>): string {
 	const url = readRequiredString(value, 'url');
 
@@ -87,6 +96,9 @@ function readUrl(value: Record<string, unknown>): string {
 	return parsed.toString();
 }
 
+/**
+ * Reads a request header map from the file, defaulting absent headers to `{}`.
+ */
 function readHeaders(value: Record<string, unknown>): Record<string, string> {
 	const headers = value.headers;
 
@@ -137,6 +149,9 @@ function readHeaderState(value: Record<string, unknown>): RequestHeaderDefinitio
 	return headerState.map(readHeaderStateEntry);
 }
 
+/**
+ * Validates one persisted header row.
+ */
 function readHeaderStateEntry(header: unknown): RequestHeaderDefinition {
 	if (!isRecord(header)) {
 		throw new Error('Request file headerState entries must be objects.');
@@ -179,6 +194,9 @@ function readParams(value: Record<string, unknown>, url: string): RequestParamDe
 	return params.map(readParam);
 }
 
+/**
+ * Validates one persisted query parameter row.
+ */
 function readParam(param: unknown): RequestParamDefinition {
 	if (!isRecord(param)) {
 		throw new Error('Request file params must be objects.');
@@ -203,6 +221,9 @@ function readParam(param: unknown): RequestParamDefinition {
 	};
 }
 
+/**
+ * Derives enabled query parameter rows from the request URL.
+ */
 function readParamsFromUrl(url: string): RequestParamDefinition[] {
 	return Array.from(new URL(url).searchParams.entries()).map(([name, value]) => ({
 		name,

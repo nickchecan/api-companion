@@ -1220,6 +1220,7 @@ export function getWebviewHtml(webview: vscode.Webview, extensionVersion: string
 			type: 'webviewReady',
 		});
 
+				// Renders response metadata, body, headers, raw text, and preview.
 				function renderResponse(result) {
 					setResponseStatus(
 						'Status: ' + result.status + ' ' + result.statusText,
@@ -1233,6 +1234,7 @@ export function getWebviewHtml(webview: vscode.Webview, extensionVersion: string
 					updateResponseAreaBounds();
 				}
 
+				// Sizes the active response panel to fit above the fixed footer.
 				function updateResponseAreaBounds() {
 					const activeResponsePanel = readActiveResponsePanel();
 
@@ -1252,6 +1254,7 @@ export function getWebviewHtml(webview: vscode.Webview, extensionVersion: string
 					responsePreviewEmpty.style.setProperty('--response-area-max-height', nextHeight);
 				}
 
+				// Returns the currently visible response content element.
 				function readActiveResponsePanel() {
 					if (!bodyPanel.classList.contains('hidden')) {
 						return responseBodyContent;
@@ -1272,6 +1275,7 @@ export function getWebviewHtml(webview: vscode.Webview, extensionVersion: string
 					return undefined;
 				}
 
+				// Updates the response status text and optional success/error badge.
 				function setResponseStatus(text, badgeType) {
 					responseStatus.textContent = text;
 					responseStatus.className = badgeType
@@ -1279,10 +1283,12 @@ export function getWebviewHtml(webview: vscode.Webview, extensionVersion: string
 						: 'response-status-text';
 				}
 
+				// Detects 2xx HTTP statuses for badge styling.
 				function isSuccessStatus(status) {
 					return status >= 200 && status < 300;
 				}
 
+				// Starts the elapsed-time counter while a request is in flight.
 				function startRequestTimer() {
 					requestStartedAt = performance.now();
 					updateRequestTimer();
@@ -1294,6 +1300,7 @@ export function getWebviewHtml(webview: vscode.Webview, extensionVersion: string
 					requestTimer = setInterval(updateRequestTimer, 100);
 				}
 
+				// Stops the elapsed-time counter after request completion.
 				function stopRequestTimer() {
 					if (requestTimer !== undefined) {
 						clearInterval(requestTimer);
@@ -1303,10 +1310,12 @@ export function getWebviewHtml(webview: vscode.Webview, extensionVersion: string
 					updateRequestTimer();
 				}
 
+				// Writes the current elapsed request time into the response header.
 				function updateRequestTimer() {
 					responseTime.textContent = formatDuration(performance.now() - requestStartedAt);
 				}
 
+				// Positions the hover-line highlight for the editable body textarea.
 				function updateTextareaHoverLine(container, textEditor, event) {
 					const editorRect = textEditor.getBoundingClientRect();
 
@@ -1328,6 +1337,7 @@ export function getWebviewHtml(webview: vscode.Webview, extensionVersion: string
 					setHoverLine(container, top, metrics.lineHeight);
 				}
 
+				// Positions the hover-line highlight for scrollable response blocks.
 				function updateScrollablePreHoverLine(container, textEditor, event) {
 					const editorRect = textEditor.getBoundingClientRect();
 
@@ -1349,16 +1359,19 @@ export function getWebviewHtml(webview: vscode.Webview, extensionVersion: string
 					setHoverLine(container, top, metrics.lineHeight);
 				}
 
+				// Applies hover-line CSS variables to a code-like container.
 				function setHoverLine(container, top, height) {
 					container.style.setProperty('--hover-line-top', top + 'px');
 					container.style.setProperty('--hover-line-height', height + 'px');
 					container.classList.add('line-hover');
 				}
 
+				// Removes the hover-line state from a code-like container.
 				function clearHoverLine(container) {
 					container.classList.remove('line-hover');
 				}
 
+				// Reads text layout metrics used for line hover calculations.
 				function getTextMetrics(element) {
 					const style = getComputedStyle(element);
 					const fontSize = parseFloat(style.fontSize);
@@ -1370,6 +1383,7 @@ export function getWebviewHtml(webview: vscode.Webview, extensionVersion: string
 					};
 				}
 
+				// Switches between request configuration tabs.
 				function showRequestTab(tabName) {
 					const showParams = tabName === 'params';
 					const showAuthorization = tabName === 'authorization';
@@ -1391,6 +1405,7 @@ export function getWebviewHtml(webview: vscode.Webview, extensionVersion: string
 					updateResponseAreaBounds();
 				}
 
+				// Switches between response display tabs.
 				function showResponseTab(tabName) {
 					const showBody = tabName === 'body';
 					const showHeaders = tabName === 'headers';
@@ -1412,6 +1427,7 @@ export function getWebviewHtml(webview: vscode.Webview, extensionVersion: string
 					updateResponseAreaBounds();
 				}
 
+				// Rebuilds request parameter rows from the current URL query string.
 				function renderRequestParamsFromUrl() {
 					renderRequestParams(readParamsFromUrl().map(([name, value]) => ({
 						name,
@@ -1420,6 +1436,7 @@ export function getWebviewHtml(webview: vscode.Webview, extensionVersion: string
 					})));
 				}
 
+				// Renders the full request parameter table.
 				function renderRequestParams(params) {
 					requestParamsTable.textContent = '';
 
@@ -1433,6 +1450,7 @@ export function getWebviewHtml(webview: vscode.Webview, extensionVersion: string
 					}
 				}
 
+				// Renders headers as enabled header rows.
 				function renderRequestHeaders(headers) {
 					renderRequestHeaderState(Object.entries(headers).map(([name, value]) => ({
 						name,
@@ -1441,6 +1459,7 @@ export function getWebviewHtml(webview: vscode.Webview, extensionVersion: string
 					})));
 				}
 
+				// Renders header rows with their persisted enabled state.
 				function renderRequestHeaderState(headerState) {
 					requestHeadersTable.textContent = '';
 
@@ -1454,14 +1473,17 @@ export function getWebviewHtml(webview: vscode.Webview, extensionVersion: string
 					}
 				}
 
+				// Adds a new enabled query parameter row.
 				function addRequestParamRow(name, value) {
 					addParamRow(name, value, true);
 				}
 
+				// Adds a new enabled request header row.
 				function addRequestHeaderRow(name, value) {
 					addHeaderRow(name, value, true);
 				}
 
+				// Creates one query parameter row and wires its edit handlers.
 				function addParamRow(name, value, enabled) {
 					const row = document.createElement('tr');
 					const enabledCell = document.createElement('td');
@@ -1528,6 +1550,7 @@ export function getWebviewHtml(webview: vscode.Webview, extensionVersion: string
 					updateSecretReferenceState(valueInput);
 				}
 
+				// Creates one request header row and wires its edit handlers.
 				function addHeaderRow(name, value, enabled) {
 					const row = document.createElement('tr');
 					const enabledCell = document.createElement('td');
@@ -1590,6 +1613,7 @@ export function getWebviewHtml(webview: vscode.Webview, extensionVersion: string
 					updateSecretReferenceState(valueInput);
 				}
 
+				// Renders form URL encoded body pairs from the serialized body.
 				function renderRequestBodyFormRows(body) {
 					requestBodyFormTable.textContent = '';
 
@@ -1605,6 +1629,7 @@ export function getWebviewHtml(webview: vscode.Webview, extensionVersion: string
 					}
 				}
 
+				// Creates one form URL encoded body row and wires its edit handlers.
 				function addBodyFormRow(name, value) {
 					const row = document.createElement('tr');
 					const nameCell = document.createElement('td');
@@ -1657,11 +1682,13 @@ export function getWebviewHtml(webview: vscode.Webview, extensionVersion: string
 					updateSecretReferenceState(valueInput);
 				}
 
+				// Serializes form rows back into the hidden body textarea.
 				function syncRequestBodyFromFormRows() {
 					requestBody.value = readBodyFormValue();
 					updateRequestBodyLineNumbers();
 				}
 
+				// Reads form body rows as an application/x-www-form-urlencoded string.
 				function readBodyFormValue() {
 					const params = new URLSearchParams();
 
@@ -1672,6 +1699,7 @@ export function getWebviewHtml(webview: vscode.Webview, extensionVersion: string
 					return params.toString();
 				}
 
+				// Reads non-empty form body rows from the DOM.
 				function readBodyFormRows() {
 					const values = [];
 
@@ -1687,6 +1715,7 @@ export function getWebviewHtml(webview: vscode.Webview, extensionVersion: string
 					return values;
 				}
 
+				// Parses a serialized form body into editable key/value entries.
 				function readBodyFormEntries(body) {
 					const entries = [];
 
@@ -1697,15 +1726,18 @@ export function getWebviewHtml(webview: vscode.Webview, extensionVersion: string
 					return entries;
 				}
 
+				// Reflects an enabled checkbox on a request row's visual state.
 				function updateRequestRowEnabledState(row, enabled) {
 					row.classList.toggle('request-header-disabled', !enabled);
 				}
 
+				// Selects and applies the active body editor mode.
 				function setRequestBodyType(nextType) {
 					requestBodyType.value = nextType;
 					applyRequestBodyType(nextType);
 				}
 
+				// Updates body controls and Content-Type header for a body mode.
 				function applyRequestBodyType(nextType) {
 					const hasTextBody = nextType !== 'none' && nextType !== 'form';
 					const hasFormBody = nextType === 'form';
@@ -1731,6 +1763,7 @@ export function getWebviewHtml(webview: vscode.Webview, extensionVersion: string
 					}
 				}
 
+				// Maps a body mode to its default Content-Type value.
 				function readBodyTypeContentType(nextType) {
 					const contentTypes = {
 						json: 'application/json',
@@ -1743,6 +1776,7 @@ export function getWebviewHtml(webview: vscode.Webview, extensionVersion: string
 					return contentTypes[nextType] || '';
 				}
 
+				// Initializes authorization controls from an Authorization header.
 				function readAuthorizationFromHeaders(headers) {
 					const authorization = readHeaderValue(headers, 'Authorization');
 
@@ -1766,6 +1800,7 @@ export function getWebviewHtml(webview: vscode.Webview, extensionVersion: string
 					syncAuthorizationHeader();
 				}
 
+				// Shows the authorization inputs for the selected auth type.
 				function applyAuthorizationType() {
 					const showBearerToken = authorizationType.value === 'bearer';
 					const showBasicAuth = authorizationType.value === 'basic';
@@ -1779,6 +1814,7 @@ export function getWebviewHtml(webview: vscode.Webview, extensionVersion: string
 					});
 				}
 
+				// Hides or shows an authorization field and its variable wrapper.
 				function setAuthorizationFieldHidden(field, hidden) {
 					field.classList.toggle('hidden', hidden);
 
@@ -1787,6 +1823,7 @@ export function getWebviewHtml(webview: vscode.Webview, extensionVersion: string
 					}
 				}
 
+				// Writes authorization control state back to the header table.
 				function syncAuthorizationHeader() {
 					activeAuthorizationType = authorizationType.value;
 					const headerValue = readAuthorizationHeaderValue();
@@ -1799,6 +1836,7 @@ export function getWebviewHtml(webview: vscode.Webview, extensionVersion: string
 					removeHeaderValue('Authorization');
 				}
 
+				// Builds the executable Authorization header value.
 				function readAuthorizationHeaderValue() {
 					if (authorizationType.value === 'bearer' && bearerToken.value) {
 						return 'Bearer ' + bearerToken.value;
@@ -1811,6 +1849,7 @@ export function getWebviewHtml(webview: vscode.Webview, extensionVersion: string
 					return '';
 				}
 
+				// Masks variable-backed credentials in the visible header table.
 				function readAuthorizationHeaderDisplayValue(headerValue) {
 					if (authorizationType.value === 'bearer' && hasVariableReference(bearerToken.value)) {
 						return 'Bearer ***';
@@ -1826,10 +1865,12 @@ export function getWebviewHtml(webview: vscode.Webview, extensionVersion: string
 					return headerValue;
 				}
 
+				// Detects RestCraft environment variable placeholders.
 				function hasVariableReference(value) {
 					return /\{\{\s*[A-Za-z_][A-Za-z0-9_]*\s*\}\}/.test(value);
 				}
 
+				// Highlights variable placeholders without exposing secret values.
 				function updateSecretReferenceState(element) {
 					if (element === requestBody) {
 						requestBodyEditor.classList.toggle(
@@ -1852,12 +1893,14 @@ export function getWebviewHtml(webview: vscode.Webview, extensionVersion: string
 					overlay.innerHTML = hasSecretReference ? formatSecretHighlight(element.value) : '';
 				}
 
+				// Refreshes variable highlighting for authorization fields.
 				function updateAuthorizationSecretStates() {
 					updateSecretReferenceState(bearerToken);
 					updateSecretReferenceState(basicAuthUsername);
 					updateSecretReferenceState(basicAuthPassword);
 				}
 
+				// Ensures an input has an overlay wrapper for variable highlighting.
 				function readVariableInputWrapper(element) {
 					if (element.parentElement?.classList.contains('variable-input-wrapper')) {
 						return element.parentElement;
@@ -1879,6 +1922,7 @@ export function getWebviewHtml(webview: vscode.Webview, extensionVersion: string
 					return wrapper;
 				}
 
+				// Produces highlighted HTML for variable placeholders.
 				function formatSecretHighlight(content) {
 					return escapeHtml(content).replace(
 						/\{\{\s*[A-Za-z_][A-Za-z0-9_]*\s*\}\}/g,
@@ -1886,6 +1930,7 @@ export function getWebviewHtml(webview: vscode.Webview, extensionVersion: string
 					);
 				}
 
+				// Decodes a Basic auth header into username/password inputs.
 				function readBasicAuthorizationCredentials(encodedCredentials) {
 					const credentials = decodeBase64(encodedCredentials);
 					const separatorIndex = credentials.indexOf(':');
@@ -1900,6 +1945,7 @@ export function getWebviewHtml(webview: vscode.Webview, extensionVersion: string
 					basicAuthPassword.value = credentials.slice(separatorIndex + 1);
 				}
 
+				// Encodes UTF-8 text for browser-side Basic auth.
 				function encodeBase64(value) {
 					const bytes = new TextEncoder().encode(value);
 					let binary = '';
@@ -1911,6 +1957,7 @@ export function getWebviewHtml(webview: vscode.Webview, extensionVersion: string
 					return btoa(binary);
 				}
 
+				// Decodes UTF-8 text from browser-side Basic auth.
 				function decodeBase64(value) {
 					try {
 						const binary = atob(value);
@@ -1926,6 +1973,7 @@ export function getWebviewHtml(webview: vscode.Webview, extensionVersion: string
 					}
 				}
 
+				// Returns placeholder text for the selected body type.
 				function readBodyTypePlaceholder(nextType) {
 					const placeholders = {
 						raw: 'Raw request body',
@@ -1938,6 +1986,7 @@ export function getWebviewHtml(webview: vscode.Webview, extensionVersion: string
 					return placeholders[nextType] || '';
 				}
 
+				// Infers the body editor mode from headers and current body content.
 				function inferRequestBodyType(headers, body, fallbackType) {
 					const contentType = readHeaderValue(headers, 'Content-Type').toLowerCase();
 
@@ -1968,6 +2017,7 @@ export function getWebviewHtml(webview: vscode.Webview, extensionVersion: string
 					return 'raw';
 				}
 
+				// Reads the request body exactly as it should be sent.
 				function readRequestBodyForSend() {
 					if (requestBodyType.value === 'none') {
 						return '';
@@ -1980,6 +2030,7 @@ export function getWebviewHtml(webview: vscode.Webview, extensionVersion: string
 					return requestBody.value;
 				}
 
+				// Formats the JSON request body or shows a validation message.
 				function beautifyJsonRequestBody() {
 					try {
 						setRequestBodyContent(JSON.stringify(JSON.parse(requestBody.value), null, 2));
@@ -1990,16 +2041,19 @@ export function getWebviewHtml(webview: vscode.Webview, extensionVersion: string
 					}
 				}
 
+				// Shows request body validation feedback.
 				function setRequestBodyMessage(message) {
 					requestBodyMessage.textContent = message;
 					requestBodyMessage.classList.remove('hidden');
 				}
 
+				// Clears request body validation feedback.
 				function clearRequestBodyMessage() {
 					requestBodyMessage.textContent = '';
 					requestBodyMessage.classList.add('hidden');
 				}
 
+				// Creates or updates a header row by case-insensitive name.
 				function setHeaderValue(name, value) {
 					let row = findHeaderRow(name);
 
@@ -2023,6 +2077,7 @@ export function getWebviewHtml(webview: vscode.Webview, extensionVersion: string
 					updateRequestRowEnabledState(row, enabled);
 				}
 
+				// Removes a header row by case-insensitive name.
 				function removeHeaderValue(name) {
 					const row = findHeaderRow(name);
 
@@ -2035,6 +2090,7 @@ export function getWebviewHtml(webview: vscode.Webview, extensionVersion: string
 					}
 				}
 
+				// Finds a header row by case-insensitive name.
 				function findHeaderRow(name) {
 					const normalizedName = name.toLowerCase();
 
@@ -2049,6 +2105,7 @@ export function getWebviewHtml(webview: vscode.Webview, extensionVersion: string
 					return undefined;
 				}
 
+				// Finds a blank header row that can be reused.
 				function findEmptyHeaderRow() {
 					for (const row of requestHeadersTable.querySelectorAll('tr')) {
 						const inputs = row.querySelectorAll('.request-header-input');
@@ -2061,6 +2118,7 @@ export function getWebviewHtml(webview: vscode.Webview, extensionVersion: string
 					return undefined;
 				}
 
+				// Reads a header value by case-insensitive name from an object map.
 				function readHeaderValue(headers, name) {
 					const normalizedName = name.toLowerCase();
 
@@ -2073,10 +2131,12 @@ export function getWebviewHtml(webview: vscode.Webview, extensionVersion: string
 					return '';
 				}
 
+				// Reads all request headers from the editor rows.
 				function readRequestHeaders() {
 					return readHeaderRows(false);
 				}
 
+				// Reads header rows including enabled/disabled state for persistence.
 				function readRequestHeaderState() {
 					const values = [];
 
@@ -2097,10 +2157,12 @@ export function getWebviewHtml(webview: vscode.Webview, extensionVersion: string
 					return values;
 				}
 
+				// Reads only enabled headers for request execution.
 				function readEnabledRequestHeaders() {
 					return readHeaderRows(true);
 				}
 
+				// Reads header rows, optionally filtering to enabled rows.
 				function readHeaderRows(onlyEnabled) {
 					const values = {};
 
@@ -2117,6 +2179,7 @@ export function getWebviewHtml(webview: vscode.Webview, extensionVersion: string
 					return values;
 				}
 
+				// Returns the executable value for a header row.
 				function readHeaderRowValue(name, value) {
 					if (name.toLowerCase() === 'authorization') {
 						return readAuthorizationHeaderValue() || value;
@@ -2125,6 +2188,7 @@ export function getWebviewHtml(webview: vscode.Webview, extensionVersion: string
 					return value;
 				}
 
+				// Reads query parameter rows including enabled/disabled state.
 				function readRequestParamState() {
 					const values = [];
 
@@ -2145,6 +2209,7 @@ export function getWebviewHtml(webview: vscode.Webview, extensionVersion: string
 					return values;
 				}
 
+				// Builds the executable URL using only enabled query parameters.
 				function readEnabledRequestUrl() {
 					let parsed;
 					try {
@@ -2162,6 +2227,7 @@ export function getWebviewHtml(webview: vscode.Webview, extensionVersion: string
 					return parsed.toString();
 				}
 
+				// Reads query parameter rows, optionally filtering to enabled rows.
 				function readParamRows(onlyEnabled) {
 					const values = [];
 
@@ -2178,6 +2244,7 @@ export function getWebviewHtml(webview: vscode.Webview, extensionVersion: string
 					return values;
 				}
 
+				// Parses query parameters from the current URL input.
 				function readParamsFromUrl() {
 					try {
 						return Array.from(new URL(url.value).searchParams.entries());
@@ -2186,6 +2253,7 @@ export function getWebviewHtml(webview: vscode.Webview, extensionVersion: string
 					}
 				}
 
+				// Rewrites the URL query string from enabled parameter rows.
 				function updateUrlFromParams() {
 					let parsed;
 					try {
@@ -2203,6 +2271,7 @@ export function getWebviewHtml(webview: vscode.Webview, extensionVersion: string
 					url.value = parsed.toString();
 				}
 
+				// Posts the current editor state to the extension host for syncing.
 				function notifyRequestChanged() {
 					vscode.postMessage({
 						type: 'requestChanged',
@@ -2216,6 +2285,7 @@ export function getWebviewHtml(webview: vscode.Webview, extensionVersion: string
 					});
 				}
 
+				// Normalizes and renders the request title.
 				function setRequestTitle(value) {
 					const title = value.trim() || 'Untitled Request';
 
@@ -2223,6 +2293,7 @@ export function getWebviewHtml(webview: vscode.Webview, extensionVersion: string
 					requestTitleInput.value = title;
 				}
 
+				// Enters inline request title editing mode.
 				function startTitleEdit() {
 					requestTitleInput.value = requestTitle.textContent || '';
 					requestTitle.classList.add('hidden');
@@ -2231,6 +2302,7 @@ export function getWebviewHtml(webview: vscode.Webview, extensionVersion: string
 					requestTitleInput.select();
 				}
 
+				// Saves inline request title edits.
 				function commitTitleEdit() {
 					if (requestTitleInput.classList.contains('hidden')) {
 						return;
@@ -2242,12 +2314,14 @@ export function getWebviewHtml(webview: vscode.Webview, extensionVersion: string
 					notifyRequestChanged();
 				}
 
+				// Discards inline request title edits.
 				function cancelTitleEdit() {
 					requestTitleInput.value = requestTitle.textContent || '';
 					requestTitleInput.classList.add('hidden');
 					requestTitle.classList.remove('hidden');
 				}
 
+				// Sets request body text and refreshes editor adornments.
 				function setRequestBodyContent(content) {
 					requestBody.value = content;
 					updateSecretReferenceState(requestBody);
@@ -2255,10 +2329,12 @@ export function getWebviewHtml(webview: vscode.Webview, extensionVersion: string
 					updateRequestBodyHighlight();
 				}
 
+				// Syncs line numbers with the request body textarea.
 				function updateRequestBodyLineNumbers() {
 					requestBodyLines.textContent = formatLineNumbers(requestBody.value || ' ');
 				}
 
+				// Refreshes JSON or variable highlighting for the request body.
 				function updateRequestBodyHighlight() {
 					requestBodyEditor.classList.remove('variable-highlight');
 
@@ -2277,6 +2353,7 @@ export function getWebviewHtml(webview: vscode.Webview, extensionVersion: string
 					requestBodyHighlight.scrollTop = requestBody.scrollTop;
 				}
 
+				// Converts JSON-like text into escaped syntax-highlighted HTML.
 				function formatJsonHighlight(content) {
 					const tokenPattern = /("(?:\\\\.|[^"\\\\])*"\\s*:?)|\\b(true|false|null)\\b|-?\\d+(?:\\.\\d+)?(?:[eE][+-]?\\d+)?/g;
 					let result = '';
@@ -2298,6 +2375,7 @@ export function getWebviewHtml(webview: vscode.Webview, extensionVersion: string
 					return result;
 				}
 
+				// Chooses the highlight class for one JSON token.
 				function readJsonTokenClass(token) {
 					if (token.startsWith('"')) {
 						return token.trimEnd().endsWith(':') ? 'json-token-key' : 'json-token-string';
@@ -2310,6 +2388,7 @@ export function getWebviewHtml(webview: vscode.Webview, extensionVersion: string
 					return 'json-token-number';
 				}
 
+				// Escapes text before inserting it as HTML.
 				function escapeHtml(content) {
 					return content
 						.replace(/&/g, '&amp;')
@@ -2317,6 +2396,7 @@ export function getWebviewHtml(webview: vscode.Webview, extensionVersion: string
 						.replace(/>/g, '&gt;');
 				}
 
+			// Sets formatted response body text and line numbers.
 			function setBodyContent(content, highlightJson) {
 				if (highlightJson) {
 					responseBody.innerHTML = formatJsonHighlight(content);
@@ -2327,17 +2407,20 @@ export function getWebviewHtml(webview: vscode.Webview, extensionVersion: string
 				responseBodyLines.textContent = formatLineNumbers(content);
 			}
 
+			// Sets raw response body text and line numbers.
 			function setRawContent(content) {
 				responseRaw.textContent = content;
 				responseRawLines.textContent = formatLineNumbers(content);
 			}
 
+			// Formats and renders response body content based on headers.
 			function setFormattedBodyContent(content, headers) {
 				const formatted = formatResponseBody(content, headers);
 
 				setBodyContent(formatted.content, formatted.highlightJson);
 			}
 
+			// Chooses formatted JSON response output when possible.
 			function formatResponseBody(content, headers) {
 				const jsonBody = formatJsonResponseBody(content, headers);
 
@@ -2354,6 +2437,7 @@ export function getWebviewHtml(webview: vscode.Webview, extensionVersion: string
 				};
 			}
 
+			// Pretty-prints JSON responses when content type or shape supports it.
 			function formatJsonResponseBody(content, headers) {
 				if (!hasJsonContentType(headers) && !looksLikeJson(content)) {
 					return '';
@@ -2366,22 +2450,26 @@ export function getWebviewHtml(webview: vscode.Webview, extensionVersion: string
 				}
 			}
 
+			// Heuristically detects JSON bodies without a JSON content type.
 			function looksLikeJson(content) {
 				const trimmed = content.trim();
 
 				return trimmed.startsWith('{') || trimmed.startsWith('[');
 			}
 
+			// Detects JSON response content types.
 			function hasJsonContentType(headers) {
 				return readHeaderValue(headers, 'Content-Type').toLowerCase().includes('json');
 			}
 
+			// Detects HTML response content types for preview rendering.
 			function hasHtmlContentType(headers) {
 				const contentType = readHeaderValue(headers, 'Content-Type').toLowerCase();
 
 				return contentType.includes('text/html') || contentType.includes('application/xhtml+xml');
 			}
 
+			// Shows or clears the sandboxed HTML response preview.
 			function setPreviewContent(content, canPreview, baseUrl) {
 				responsePreview.classList.toggle('hidden', !canPreview);
 				responsePreviewEmpty.classList.toggle('hidden', canPreview);
@@ -2396,6 +2484,7 @@ export function getWebviewHtml(webview: vscode.Webview, extensionVersion: string
 				responsePreviewEmpty.textContent = 'HTML preview is available for HTML responses.';
 			}
 
+			// Builds an inert preview document with a base URL for relative assets.
 			function createPreviewDocument(content, baseUrl) {
 				const previewHead = '<base href="' + escapeHtmlAttribute(baseUrl) + '"><style>a, button, input, select, textarea, label, summary, [role="button"], [onclick] { pointer-events: none !important; } form { pointer-events: none !important; }</style>';
 
@@ -2406,6 +2495,7 @@ export function getWebviewHtml(webview: vscode.Webview, extensionVersion: string
 				return previewHead + content;
 			}
 
+			// Escapes text before inserting it into an HTML attribute.
 			function escapeHtmlAttribute(content) {
 				return content
 					.replace(/&/g, '&amp;')
@@ -2414,12 +2504,14 @@ export function getWebviewHtml(webview: vscode.Webview, extensionVersion: string
 					.replace(/>/g, '&gt;');
 			}
 
+			// Returns line numbers matching the provided text content.
 			function formatLineNumbers(content) {
 				const lineCount = content.split('\\n').length;
 
 				return Array.from({ length: lineCount }, (_item, index) => String(index + 1)).join('\\n');
 			}
 
+		// Formats response headers for display.
 		function formatHeaders(headers) {
 			const lines = Object.entries(headers)
 				.map(([name, value]) => name + ': ' + value)
@@ -2428,6 +2520,7 @@ export function getWebviewHtml(webview: vscode.Webview, extensionVersion: string
 			return lines || '(none)';
 		}
 
+		// Formats request duration for the response metadata row.
 		function formatDuration(durationMs) {
 			if (durationMs < 1000) {
 				return Math.round(durationMs) + ' ms';
@@ -2436,6 +2529,7 @@ export function getWebviewHtml(webview: vscode.Webview, extensionVersion: string
 			return (durationMs / 1000).toFixed(2) + ' s';
 		}
 
+		// Formats response body byte size for the response metadata row.
 		function formatResponseSize(content) {
 			const bytes = new TextEncoder().encode(content).length;
 
@@ -2450,6 +2544,7 @@ export function getWebviewHtml(webview: vscode.Webview, extensionVersion: string
 			return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
 		}
 
+		// Formats a loaded request body for the body editor.
 		function formatBody(body) {
 			if (typeof body === 'string') {
 				return body || '(empty)';

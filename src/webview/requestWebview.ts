@@ -162,6 +162,9 @@ export async function executeRequestWithEnvironment(
 	return executeRequest(request);
 }
 
+/**
+ * Reads the optional sibling `.env` file for a request document.
+ */
 async function readEnvironmentVariables(requestUri: vscode.Uri): Promise<Record<string, string>> {
 	const envUri = vscode.Uri.joinPath(readRequestDirectory(requestUri), '.env');
 
@@ -177,12 +180,18 @@ async function readEnvironmentVariables(requestUri: vscode.Uri): Promise<Record<
 	}
 }
 
+/**
+ * Returns the directory URI that contains a request file.
+ */
 function readRequestDirectory(requestUri: vscode.Uri): vscode.Uri {
 	const directoryPath = requestUri.path.replace(/\/[^/]*$/, '') || '/';
 
 	return requestUri.with({ path: directoryPath });
 }
 
+/**
+ * Detects missing `.env` files without hiding other filesystem errors.
+ */
 function isFileNotFoundError(error: unknown): boolean {
 	if (!(error instanceof vscode.FileSystemError)) {
 		return false;
@@ -191,6 +200,9 @@ function isFileNotFoundError(error: unknown): boolean {
 	return error.code === 'FileNotFound';
 }
 
+/**
+ * Validates a webview request execution message.
+ */
 function isSendRequestMessage(message: unknown): message is SendRequestMessage {
 	if (!isRecord(message)) {
 		return false;
@@ -205,6 +217,9 @@ function isSendRequestMessage(message: unknown): message is SendRequestMessage {
 		&& (candidate.headers === undefined || isStringRecord(candidate.headers));
 }
 
+/**
+ * Validates the webview ready lifecycle message.
+ */
 function isWebviewReadyMessage(message: unknown): message is WebviewReadyMessage {
 	if (!isRecord(message)) {
 		return false;
@@ -215,6 +230,9 @@ function isWebviewReadyMessage(message: unknown): message is WebviewReadyMessage
 	return candidate.type === 'webviewReady';
 }
 
+/**
+ * Validates the footer repository link message.
+ */
 function isOpenRepositoryMessage(message: unknown): message is OpenRepositoryMessage {
 	if (!isRecord(message)) {
 		return false;
@@ -225,6 +243,9 @@ function isOpenRepositoryMessage(message: unknown): message is OpenRepositoryMes
 	return candidate.type === 'openRepository';
 }
 
+/**
+ * Validates the footer issues link message.
+ */
 function isOpenIssuesMessage(message: unknown): message is OpenIssuesMessage {
 	if (!isRecord(message)) {
 		return false;
@@ -235,6 +256,9 @@ function isOpenIssuesMessage(message: unknown): message is OpenIssuesMessage {
 	return candidate.type === 'openIssues';
 }
 
+/**
+ * Validates a request edit message before syncing it to the text document.
+ */
 function isRequestChangedMessage(message: unknown): message is RequestChangedMessage {
 	if (!isRecord(message)) {
 		return false;
@@ -254,6 +278,9 @@ function isRequestChangedMessage(message: unknown): message is RequestChangedMes
 		&& isStringRecord(candidate.headers);
 }
 
+/**
+ * Validates one query parameter row from the webview.
+ */
 function isRequestParamState(value: unknown): value is RequestParamDefinition {
 	if (!isRecord(value)) {
 		return false;
@@ -266,6 +293,9 @@ function isRequestParamState(value: unknown): value is RequestParamDefinition {
 		&& typeof candidate.enabled === 'boolean';
 }
 
+/**
+ * Validates one header row from the webview.
+ */
 function isRequestHeaderState(value: unknown): value is RequestHeaderDefinition {
 	if (!isRecord(value)) {
 		return false;

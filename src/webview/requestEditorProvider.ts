@@ -25,6 +25,9 @@ export class RequestEditorProvider implements vscode.CustomTextEditorProvider {
 		private readonly extensionVersion: string,
 	) {}
 
+	/**
+	 * Registers RestCraft's custom editor provider with VS Code.
+	 */
 	public static register(context: vscode.ExtensionContext, extensionVersion: string): vscode.Disposable {
 		return vscode.window.registerCustomEditorProvider(
 			RequestEditorProvider.viewType,
@@ -37,6 +40,9 @@ export class RequestEditorProvider implements vscode.CustomTextEditorProvider {
 		);
 	}
 
+	/**
+	 * Connects one `.api.json` text document to its backing webview editor.
+	 */
 	public resolveCustomTextEditor(
 		document: vscode.TextDocument,
 		webviewPanel: vscode.WebviewPanel,
@@ -98,6 +104,9 @@ export class RequestEditorProvider implements vscode.CustomTextEditorProvider {
 		void this.loadDocument(webviewPanel, document, draftParams, draftHeaderState);
 	}
 
+	/**
+	 * Parses the current document text and posts the request model to the webview.
+	 */
 	private async loadDocument(
 		webviewPanel: vscode.WebviewPanel,
 		document: vscode.TextDocument,
@@ -110,6 +119,9 @@ export class RequestEditorProvider implements vscode.CustomTextEditorProvider {
 		await loadRequestInWebview(webviewPanel.webview, request, params, headerState);
 	}
 
+	/**
+	 * Replaces the full text document with serialized request JSON.
+	 */
 	private async updateDocument(
 		document: vscode.TextDocument,
 		nextText: string,
@@ -124,6 +136,9 @@ export class RequestEditorProvider implements vscode.CustomTextEditorProvider {
 		await vscode.workspace.applyEdit(edit);
 	}
 
+	/**
+	 * Applies a webview edit message to the current request JSON document.
+	 */
 	private createUpdatedDocumentText(document: vscode.TextDocument, message: RequestChangedMessage): string {
 		const parsed = readDocumentObject(document.getText());
 
@@ -173,6 +188,9 @@ function readDraftRequestDocument(content: string): RequestFileDefinition {
 	};
 }
 
+/**
+ * Reads usable parameter rows from draft JSON, ignoring incomplete rows.
+ */
 function readDraftParams(params: unknown, url: string): RequestChangedMessage['params'] {
 	if (!Array.isArray(params)) {
 		return readDraftParamsFromUrl(url);
@@ -197,6 +215,9 @@ function readDraftParams(params: unknown, url: string): RequestChangedMessage['p
 	return normalized;
 }
 
+/**
+ * Derives draft parameter rows from a URL if it can be parsed.
+ */
 function readDraftParamsFromUrl(url: string): RequestChangedMessage['params'] {
 	try {
 		return Array.from(new URL(url).searchParams.entries()).map(([name, value]) => ({
@@ -209,6 +230,9 @@ function readDraftParamsFromUrl(url: string): RequestChangedMessage['params'] {
 	}
 }
 
+/**
+ * Reads usable headers from draft JSON, ignoring malformed entries.
+ */
 function readDraftHeaders(headers: unknown): Record<string, string> {
 	if (!isRecord(headers)) {
 		return {};
@@ -225,6 +249,9 @@ function readDraftHeaders(headers: unknown): Record<string, string> {
 	return normalized;
 }
 
+/**
+ * Reads draft header row state or derives it from the header map.
+ */
 function readDraftHeaderState(headerState: unknown, headers: unknown): RequestChangedMessage['headerState'] {
 	if (!Array.isArray(headerState)) {
 		return Object.entries(readDraftHeaders(headers)).map(([name, value]) => ({
@@ -253,6 +280,9 @@ function readDraftHeaderState(headerState: unknown, headers: unknown): RequestCh
 	return normalized;
 }
 
+/**
+ * Parses document text into an object when possible.
+ */
 function readDocumentObject(content: string): Record<string, unknown> {
 	try {
 		const parsed = JSON.parse(content);
@@ -267,6 +297,9 @@ function readDocumentObject(content: string): Record<string, unknown> {
 	return {};
 }
 
+/**
+ * Preserves valid JSON body values and falls back to raw text.
+ */
 function readBodyValue(body: string): unknown {
 	try {
 		return JSON.parse(body);
@@ -275,6 +308,9 @@ function readBodyValue(body: string): unknown {
 	}
 }
 
+/**
+ * Normalizes empty request names for editor titles.
+ */
 function readRequestTitle(name: string): string {
 	return name.trim() || 'Untitled Request';
 }

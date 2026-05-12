@@ -45,6 +45,12 @@ export function activate(context: vscode.ExtensionContext) {
 	context.subscriptions.push(openApiWorkbench, loadRequestFile, RequestEditorProvider.register(context, extensionVersion));
 }
 
+/**
+ * VS Code calls this when the extension is deactivated.
+ *
+ * RestCraft currently registers disposable commands/providers only, so VS Code
+ * can clean them up through `context.subscriptions` without explicit teardown.
+ */
 export function deactivate() {}
 
 /**
