@@ -1,5 +1,12 @@
 import * as vscode from 'vscode';
 
+/**
+ * Generates the complete API Workbench webview document.
+ *
+ * The UI is intentionally bundled into this string today because the extension
+ * has no separate frontend build pipeline. Keep the nonce and CSP aligned with
+ * VS Code webview security requirements whenever scripts or resources change.
+ */
 export function getWebviewHtml(webview: vscode.Webview, extensionVersion: string): string {
 	const nonce = getNonce();
 	const cspSource = webview.cspSource;
@@ -2455,6 +2462,9 @@ export function getWebviewHtml(webview: vscode.Webview, extensionVersion: string
 </html>`;
 }
 
+/**
+ * Creates a per-render nonce for the inline webview script.
+ */
 function getNonce(): string {
 	let text = '';
 	const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
@@ -2466,6 +2476,9 @@ function getNonce(): string {
 	return text;
 }
 
+/**
+ * Escapes text embedded into HTML content nodes.
+ */
 function escapeHtmlContent(content: string): string {
 	return content
 		.replace(/&/g, '&amp;')

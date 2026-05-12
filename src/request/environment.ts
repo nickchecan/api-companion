@@ -2,6 +2,13 @@ import { ApiRequest } from './types';
 
 const variablePattern = /\{\{\s*([A-Za-z_][A-Za-z0-9_]*)\s*\}\}/g;
 
+/**
+ * Parses the simple `.env` format used beside `.api.json` request files.
+ *
+ * Supported lines are `NAME=value`, with blank lines and `#` comments ignored.
+ * Values may be wrapped in matching single or double quotes; escape sequences
+ * and shell expansion are intentionally not interpreted.
+ */
 export function parseEnvFile(content: string): Record<string, string> {
 	const values: Record<string, string> = {};
 
@@ -31,6 +38,14 @@ export function parseEnvFile(content: string): Record<string, string> {
 	return values;
 }
 
+/**
+ * Substitutes `{{VARIABLE_NAME}}` references in URL, headers, and body.
+ *
+ * Missing variables are collected across the whole request so the caller can
+ * show one actionable error. Basic auth credentials and form URL encoded bodies
+ * need special handling because their serialized forms differ from what users
+ * edit in the UI.
+ */
 export function resolveRequestVariables(request: ApiRequest, variables: Record<string, string>): ApiRequest {
 	const missing = new Set<string>();
 	const resolvedHeaders: Record<string, string> = {};
@@ -56,6 +71,12 @@ export function resolveRequestVariables(request: ApiRequest, variables: Record<s
 	return resolved;
 }
 
+/**
+ * Resolves a body after the headers have been resolved.
+ *
+ * Form URL encoded payloads are parsed as key/value pairs so variables inside
+ * field names and values are substituted before the body is serialized again.
+ */
 function resolveBody(
 	body: string,
 	headers: Record<string, string>,
@@ -78,6 +99,13 @@ function resolveBody(
 	return params.toString();
 }
 
+/**
+ * Resolves a header value, preserving Basic auth wire format.
+ *
+ * The editor stores Basic auth as a base64 header value. To support variables in
+ * the username/password fields, the credentials are decoded, resolved, and then
+ * re-encoded before execution.
+ */
 function resolveHeaderValue(
 	name: string,
 	value: string,

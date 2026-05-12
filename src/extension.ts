@@ -5,6 +5,13 @@ import { isRequestFileName, parseRequestFile } from './request/requestFile';
 import { RequestEditorProvider } from './webview/requestEditorProvider';
 import { ApiWorkbenchPanel } from './webview/requestPanel';
 
+/**
+ * Registers RestCraft commands and the custom request editor.
+ *
+ * Activation intentionally does only lightweight setup. Work that reads files,
+ * opens panels, or parses requests is deferred until the user invokes a command
+ * or opens a `.api.json` document.
+ */
 export function activate(context: vscode.ExtensionContext) {
 	const extensionVersion = readExtensionVersion(context);
 
@@ -40,6 +47,12 @@ export function activate(context: vscode.ExtensionContext) {
 
 export function deactivate() {}
 
+/**
+ * Reads the extension version from VS Code's package metadata.
+ *
+ * The helper keeps package JSON shape handling outside activation so the entry
+ * point stays focused on command and provider registration.
+ */
 function readExtensionVersion(context: vscode.ExtensionContext): string {
 	return readPackageVersion(context.extension.packageJSON);
 }

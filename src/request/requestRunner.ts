@@ -1,5 +1,12 @@
 import { ApiRequest, ApiResponse, isHttpMethod } from './types';
 
+/**
+ * Executes a validated API request using the extension host's fetch runtime.
+ *
+ * The runner accepts the same lightweight request shape used by the webview
+ * bridge, then normalizes method and URL before any network activity. Bodies are
+ * omitted for GET and HEAD to match fetch/HTTP expectations.
+ */
 export async function executeRequest(request: ApiRequest): Promise<ApiResponse> {
 	const method = normalizeMethod(request.method);
 	const url = normalizeUrl(request.url);

@@ -10,6 +10,13 @@ import {
 	RequestChangedMessage,
 } from './requestWebview';
 
+/**
+ * Custom text editor for `.api.json` request files.
+ *
+ * The editor keeps the JSON document as the source of truth while presenting a
+ * form-based request builder. User edits in the webview are serialized back into
+ * the text document, and external text edits are reloaded into the webview.
+ */
 export class RequestEditorProvider implements vscode.CustomTextEditorProvider {
 	public static readonly viewType = 'restcraft.requestEditor';
 
@@ -40,7 +47,10 @@ export class RequestEditorProvider implements vscode.CustomTextEditorProvider {
 			localResourceRoots: [this.extensionUri],
 		};
 
+		// Tracks writes initiated by this provider so the following document
+		// change event is not treated as an external edit from another editor.
 		let pendingDocumentText: string | undefined;
+		// Keeps unsaved row enablement while the JSON document is being updated.
 		let draftParams: RequestChangedMessage['params'] | undefined;
 		let draftHeaderState: RequestChangedMessage['headerState'] | undefined;
 		const messageSubscription = initializeRequestWebview(webviewPanel.webview, {
@@ -129,6 +139,12 @@ export class RequestEditorProvider implements vscode.CustomTextEditorProvider {
 	}
 }
 
+/**
+ * Reads a request for editor display.
+ *
+ * Invalid or incomplete JSON is tolerated here so the custom editor can remain
+ * open while a user is midway through editing the underlying file.
+ */
 function readRequestDocument(content: string): RequestFileDefinition {
 	try {
 		return parseRequestFile(content);
@@ -137,6 +153,9 @@ function readRequestDocument(content: string): RequestFileDefinition {
 	}
 }
 
+/**
+ * Builds a best-effort request model from incomplete document content.
+ */
 function readDraftRequestDocument(content: string): RequestFileDefinition {
 	const parsed = readDocumentObject(content);
 	const method = typeof parsed.method === 'string' && isHttpMethod(parsed.method.toUpperCase())

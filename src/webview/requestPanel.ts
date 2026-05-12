@@ -3,6 +3,13 @@ import * as vscode from 'vscode';
 import { RequestFileDefinition } from '../request/types';
 import { executeRequestWithEnvironment, initializeRequestWebview, loadRequestInWebview } from './requestWebview';
 
+/**
+ * Singleton API Workbench panel used by the `restcraft.openApiWorkbench` command.
+ *
+ * The panel can be opened empty or loaded from a `.api.json` file. When a file
+ * is loaded, its URI is retained so request execution can resolve sibling `.env`
+ * variables.
+ */
 export class ApiWorkbenchPanel {
 	private static currentPanel: ApiWorkbenchPanel | undefined;
 

@@ -44,6 +44,13 @@ export interface RequestWebviewHandlers {
 	onSendRequest?: (message: SendRequestMessage) => Promise<ApiResponse>;
 }
 
+/**
+ * Initializes a request webview and wires all trusted extension-host handlers.
+ *
+ * Every message received from the webview is validated before use. Callers can
+ * opt into document sync and environment-aware sending by providing handlers,
+ * while the workbench panel can use the default request execution path.
+ */
 export function initializeRequestWebview(
 	webview: vscode.Webview,
 	handlersOrOnReady?: RequestWebviewHandlers | (() => void),
@@ -79,6 +86,12 @@ export function initializeRequestWebview(
 	});
 }
 
+/**
+ * Pushes a request model into the webview.
+ *
+ * Custom editors may pass draft param/header state so user edits are preserved
+ * while the backing text document is being rewritten.
+ */
 export async function loadRequestInWebview(
 	webview: vscode.Webview,
 	request: RequestFileDefinition,
@@ -95,6 +108,10 @@ export async function loadRequestInWebview(
 	});
 }
 
+/**
+ * Handles a validated send request and posts either a completion or error event
+ * back to the webview UI.
+ */
 async function handleMessage(
 	webview: vscode.Webview,
 	message: unknown,
@@ -124,6 +141,12 @@ async function handleMessage(
 	}
 }
 
+/**
+ * Executes a request after resolving variables from a sibling `.env` file.
+ *
+ * If the request has no associated file URI, variable resolution uses an empty
+ * environment map and unresolved variables will be reported by the resolver.
+ */
 export async function executeRequestWithEnvironment(
 	message: SendRequestMessage,
 	requestUri: vscode.Uri | undefined,
