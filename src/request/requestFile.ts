@@ -8,6 +8,14 @@ import {
 } from './types';
 import { isRecord } from '../shared/object';
 
+/**
+ * Parses and validates the canonical `.api.json` request file format.
+ *
+ * The returned shape is normalized for the UI: methods are uppercase, URLs are
+ * serialized through `URL`, missing headers become `{}`, missing body becomes
+ * `null`, and query params/header state are derived for older files that only
+ * contain `url` or `headers`.
+ */
 export function parseRequestFile(content: string): RequestFileDefinition {
 	let parsed: unknown;
 
@@ -35,6 +43,9 @@ export function parseRequestFile(content: string): RequestFileDefinition {
 	};
 }
 
+/**
+ * Detects request definition files by the current canonical extension.
+ */
 export function isRequestFileName(fileName: string): boolean {
 	return fileName.endsWith('.api.json');
 }
@@ -104,6 +115,10 @@ function readHeaders(value: Record<string, unknown>): Record<string, string> {
 	return normalized;
 }
 
+/**
+ * Reads persisted header UI state, falling back to enabled headers for files
+ * created before header enable/disable state existed.
+ */
 function readHeaderState(value: Record<string, unknown>): RequestHeaderDefinition[] {
 	const headerState = value.headerState;
 
@@ -146,6 +161,10 @@ function readHeaderStateEntry(header: unknown): RequestHeaderDefinition {
 	};
 }
 
+/**
+ * Reads persisted query param UI state, falling back to enabled params parsed
+ * from the URL for files created before param state was stored separately.
+ */
 function readParams(value: Record<string, unknown>, url: string): RequestParamDefinition[] {
 	const params = value.params;
 

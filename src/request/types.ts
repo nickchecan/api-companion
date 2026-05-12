@@ -36,6 +36,11 @@ export interface RequestFileDefinition {
 	body: unknown;
 }
 
+/**
+ * HTTP verbs supported by request files, the workbench UI, and execution.
+ *
+ * Keep this list in sync with package/UI affordances when adding a method.
+ */
 export const supportedMethods: readonly HttpMethod[] = [
 	'GET',
 	'POST',
@@ -46,6 +51,12 @@ export const supportedMethods: readonly HttpMethod[] = [
 	'OPTIONS',
 ];
 
+/**
+ * Runtime guard for user-provided methods.
+ *
+ * Request files and webview messages are untrusted until validated, even though
+ * the TypeScript types describe the canonical in-memory shape.
+ */
 export function isHttpMethod(method: string): method is HttpMethod {
 	return supportedMethods.includes(method as HttpMethod);
 }
