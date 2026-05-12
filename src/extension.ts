@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 
+import { readPackageVersion } from './extensionVersion';
 import { isRequestFileName, parseRequestFile } from './request/requestFile';
 import { RequestEditorProvider } from './webview/requestEditorProvider';
 import { ApiWorkbenchPanel } from './webview/requestPanel';
@@ -7,11 +8,11 @@ import { ApiWorkbenchPanel } from './webview/requestPanel';
 export function activate(context: vscode.ExtensionContext) {
 	const extensionVersion = readExtensionVersion(context);
 
-	const openApiWorkbench = vscode.commands.registerCommand('api-companion.openApiWorkbench', () => {
+	const openApiWorkbench = vscode.commands.registerCommand('restcraft.openApiWorkbench', () => {
 		ApiWorkbenchPanel.createOrShow(context.extensionUri, extensionVersion);
 	});
 
-	const loadRequestFile = vscode.commands.registerCommand('api-companion.loadRequestFile', async () => {
+	const loadRequestFile = vscode.commands.registerCommand('restcraft.loadRequestFile', async () => {
 		const editor = vscode.window.activeTextEditor;
 
 		if (!editor) {
@@ -40,7 +41,5 @@ export function activate(context: vscode.ExtensionContext) {
 export function deactivate() {}
 
 function readExtensionVersion(context: vscode.ExtensionContext): string {
-	const packageJson = context.extension.packageJSON as { version?: unknown };
-
-	return typeof packageJson.version === 'string' ? packageJson.version : '0.0.0';
+	return readPackageVersion(context.extension.packageJSON);
 }

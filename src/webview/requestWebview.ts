@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 
 import { parseEnvFile, resolveRequestVariables } from '../request/environment';
 import { executeRequest } from '../request/requestRunner';
-import { ApiResponse, RequestFileDefinition } from '../request/types';
+import { ApiResponse, RequestFileDefinition, RequestHeaderDefinition, RequestParamDefinition } from '../request/types';
 import { isRecord, isStringRecord } from '../shared/object';
 import { getWebviewHtml } from './getWebviewHtml';
 
@@ -31,6 +31,8 @@ export interface RequestChangedMessage {
 	name: string;
 	method: string;
 	url: string;
+	params: RequestParamDefinition[];
+	headerState: RequestHeaderDefinition[];
 	headers: Record<string, string>;
 	body: string;
 }
@@ -64,12 +66,12 @@ export function initializeRequestWebview(
 		}
 
 		if (isOpenRepositoryMessage(message)) {
-			void vscode.env.openExternal(vscode.Uri.parse('https://github.com/nickchecan/api-companion'));
+			void vscode.env.openExternal(vscode.Uri.parse('https://github.com/nickchecan/restcraft'));
 			return;
 		}
 
 		if (isOpenIssuesMessage(message)) {
-			void vscode.env.openExternal(vscode.Uri.parse('https://github.com/nickchecan/api-companion/issues'));
+			void vscode.env.openExternal(vscode.Uri.parse('https://github.com/nickchecan/restcraft/issues'));
 			return;
 		}
 
@@ -77,10 +79,19 @@ export function initializeRequestWebview(
 	});
 }
 
-export async function loadRequestInWebview(webview: vscode.Webview, request: RequestFileDefinition): Promise<void> {
+export async function loadRequestInWebview(
+	webview: vscode.Webview,
+	request: RequestFileDefinition,
+	params?: RequestParamDefinition[],
+	headerState?: RequestHeaderDefinition[],
+): Promise<void> {
 	await webview.postMessage({
 		type: 'loadRequest',
-		request,
+		request: {
+			...request,
+			params: params ?? request.params,
+			headerState: headerState ?? request.headerState,
+		},
 	});
 }
 
@@ -213,5 +224,33 @@ function isRequestChangedMessage(message: unknown): message is RequestChangedMes
 		&& typeof candidate.method === 'string'
 		&& typeof candidate.url === 'string'
 		&& typeof candidate.body === 'string'
+		&& Array.isArray(candidate.params)
+		&& candidate.params.every(isRequestParamState)
+		&& Array.isArray(candidate.headerState)
+		&& candidate.headerState.every(isRequestHeaderState)
 		&& isStringRecord(candidate.headers);
+}
+
+function isRequestParamState(value: unknown): value is RequestParamDefinition {
+	if (!isRecord(value)) {
+		return false;
+	}
+
+	const candidate = value as Partial<RequestParamDefinition>;
+
+	return typeof candidate.name === 'string'
+		&& typeof candidate.value === 'string'
+		&& typeof candidate.enabled === 'boolean';
+}
+
+function isRequestHeaderState(value: unknown): value is RequestHeaderDefinition {
+	if (!isRecord(value)) {
+		return false;
+	}
+
+	const candidate = value as Partial<RequestHeaderDefinition>;
+
+	return typeof candidate.name === 'string'
+		&& typeof candidate.value === 'string'
+		&& typeof candidate.enabled === 'boolean';
 }

@@ -14,10 +14,24 @@ export interface ApiResponse {
 	body: string;
 }
 
+export interface RequestParamDefinition {
+	name: string;
+	value: string;
+	enabled: boolean;
+}
+
+export interface RequestHeaderDefinition {
+	name: string;
+	value: string;
+	enabled: boolean;
+}
+
 export interface RequestFileDefinition {
 	name: string;
 	method: HttpMethod;
 	url: string;
+	params: RequestParamDefinition[];
+	headerState: RequestHeaderDefinition[];
 	headers: Record<string, string>;
 	body: unknown;
 }

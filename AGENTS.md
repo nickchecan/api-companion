@@ -2,7 +2,7 @@
 
 ## Project Purpose
 
-`api-companion` is a Visual Studio Code extension that provides a Postman-like interface for creating, managing, and executing API requests from file-based definitions inside VS Code.
+`restcraft` is a Visual Studio Code extension that provides a Postman-like interface for creating, managing, and executing API requests from file-based definitions inside VS Code.
 
 The extension currently supports `.api.json` request files, a custom request editor, an API Workbench webview, environment variable substitution from sibling `.env` files, and user-triggered HTTP execution through the extension host.
 
@@ -113,7 +113,7 @@ The default build task is `watch`, defined in `.vscode/tasks.json`, and it runs:
 - Keep extension activation lightweight.
 - Register disposables with `context.subscriptions`.
 - Prefer small, focused modules and keep request logic separate from activation and Webview plumbing.
-- Keep command IDs namespaced under `api-companion`.
+- Keep command IDs namespaced under `restcraft`.
 - Use VS Code APIs instead of Node-only behavior when interacting with workspace files where possible.
 - Keep user-facing errors clear and actionable.
 - Add or update tests when adding behavior that can be validated without manual Extension Host testing.

@@ -11,7 +11,7 @@ import {
 } from './requestWebview';
 
 export class RequestEditorProvider implements vscode.CustomTextEditorProvider {
-	public static readonly viewType = 'api-companion.requestEditor';
+	public static readonly viewType = 'restcraft.requestEditor';
 
 	public constructor(
 		private readonly extensionUri: vscode.Uri,
@@ -41,10 +41,12 @@ export class RequestEditorProvider implements vscode.CustomTextEditorProvider {
 		};
 
 		let pendingDocumentText: string | undefined;
+		let draftParams: RequestChangedMessage['params'] | undefined;
+		let draftHeaderState: RequestChangedMessage['headerState'] | undefined;
 		const messageSubscription = initializeRequestWebview(webviewPanel.webview, {
 			extensionVersion: this.extensionVersion,
 			onReady: () => {
-				void this.loadDocument(webviewPanel, document);
+				void this.loadDocument(webviewPanel, document, draftParams, draftHeaderState);
 			},
 			onRequestChanged: (message) => {
 				let nextText: string;
@@ -54,6 +56,8 @@ export class RequestEditorProvider implements vscode.CustomTextEditorProvider {
 					return;
 				}
 
+				draftParams = message.params;
+				draftHeaderState = message.headerState;
 				webviewPanel.title = readRequestTitle(message.name);
 
 				if (nextText !== document.getText()) {
@@ -70,6 +74,8 @@ export class RequestEditorProvider implements vscode.CustomTextEditorProvider {
 					return;
 				}
 
+					draftParams = undefined;
+					draftHeaderState = undefined;
 					void this.loadDocument(webviewPanel, event.document);
 				}
 			});
@@ -79,14 +85,19 @@ export class RequestEditorProvider implements vscode.CustomTextEditorProvider {
 			documentSubscription.dispose();
 		});
 
-		void this.loadDocument(webviewPanel, document);
+		void this.loadDocument(webviewPanel, document, draftParams, draftHeaderState);
 	}
 
-	private async loadDocument(webviewPanel: vscode.WebviewPanel, document: vscode.TextDocument): Promise<void> {
+	private async loadDocument(
+		webviewPanel: vscode.WebviewPanel,
+		document: vscode.TextDocument,
+		params?: RequestChangedMessage['params'],
+		headerState?: RequestChangedMessage['headerState'],
+	): Promise<void> {
 		const request = readRequestDocument(document.getText());
 
 		webviewPanel.title = readRequestTitle(request.name);
-		await loadRequestInWebview(webviewPanel.webview, request);
+		await loadRequestInWebview(webviewPanel.webview, request, params, headerState);
 	}
 
 	private async updateDocument(
@@ -109,6 +120,8 @@ export class RequestEditorProvider implements vscode.CustomTextEditorProvider {
 		parsed.name = message.name.trim() || 'Untitled Request';
 		parsed.method = message.method;
 		parsed.url = message.url;
+		parsed.params = message.params;
+		parsed.headerState = message.headerState;
 		parsed.headers = message.headers;
 		parsed.body = message.body.trim() ? readBodyValue(message.body) : null;
 
@@ -134,9 +147,47 @@ function readDraftRequestDocument(content: string): RequestFileDefinition {
 		name: typeof parsed.name === 'string' && parsed.name.trim() ? parsed.name.trim() : 'Untitled Request',
 		method,
 		url: typeof parsed.url === 'string' ? parsed.url : '',
+		params: readDraftParams(parsed.params, typeof parsed.url === 'string' ? parsed.url : ''),
+		headerState: readDraftHeaderState(parsed.headerState, parsed.headers),
 		headers: readDraftHeaders(parsed.headers),
 		body: parsed.body ?? null,
 	};
+}
+
+function readDraftParams(params: unknown, url: string): RequestChangedMessage['params'] {
+	if (!Array.isArray(params)) {
+		return readDraftParamsFromUrl(url);
+	}
+
+	const normalized: RequestChangedMessage['params'] = [];
+
+	for (const param of params) {
+		if (!isRecord(param)) {
+			continue;
+		}
+
+		if (typeof param.name === 'string' && param.name.trim() && typeof param.value === 'string') {
+			normalized.push({
+				name: param.name.trim(),
+				value: param.value,
+				enabled: typeof param.enabled === 'boolean' ? param.enabled : true,
+			});
+		}
+	}
+
+	return normalized;
+}
+
+function readDraftParamsFromUrl(url: string): RequestChangedMessage['params'] {
+	try {
+		return Array.from(new URL(url).searchParams.entries()).map(([name, value]) => ({
+			name,
+			value,
+			enabled: true,
+		}));
+	} catch {
+		return [];
+	}
 }
 
 function readDraftHeaders(headers: unknown): Record<string, string> {
@@ -149,6 +200,34 @@ function readDraftHeaders(headers: unknown): Record<string, string> {
 	for (const [name, value] of Object.entries(headers)) {
 		if (name.trim() && typeof value === 'string') {
 			normalized[name] = value;
+		}
+	}
+
+	return normalized;
+}
+
+function readDraftHeaderState(headerState: unknown, headers: unknown): RequestChangedMessage['headerState'] {
+	if (!Array.isArray(headerState)) {
+		return Object.entries(readDraftHeaders(headers)).map(([name, value]) => ({
+			name,
+			value,
+			enabled: true,
+		}));
+	}
+
+	const normalized: RequestChangedMessage['headerState'] = [];
+
+	for (const header of headerState) {
+		if (!isRecord(header)) {
+			continue;
+		}
+
+		if (typeof header.name === 'string' && header.name.trim() && typeof header.value === 'string') {
+			normalized.push({
+				name: header.name.trim(),
+				value: header.value,
+				enabled: typeof header.enabled === 'boolean' ? header.enabled : true,
+			});
 		}
 	}
 
