@@ -1,6 +1,6 @@
 import * as assert from 'assert';
 
-import { parseEnvFile, resolveRequestVariables } from '../request/environment';
+import { parseEnvFile, resolveRequestVariables } from '../src/request/environment';
 
 suite('Environment variables', () => {
 	test('parses env files', () => {

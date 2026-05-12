@@ -1,6 +1,6 @@
 import * as assert from 'assert';
 
-import { executeRequest } from '../request/requestRunner';
+import { executeRequest } from '../src/request/requestRunner';
 
 suite('Request runner', () => {
 	const originalFetch = globalThis.fetch;

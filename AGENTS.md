@@ -2,9 +2,9 @@
 
 ## Project Purpose
 
-`api-companion` is a Visual Studio Code extension intended to provide a Postman-like interface for creating, managing, and executing API requests from file-based definitions inside VS Code.
+`api-companion` is a Visual Studio Code extension that provides a Postman-like interface for creating, managing, and executing API requests from file-based definitions inside VS Code.
 
-The extension is currently at scaffold stage. The manifest describes the intended API companion product, but the implemented runtime is still the default Hello World command.
+The extension currently supports `.api.json` request files, a custom request editor, an API Workbench webview, environment variable substitution from sibling `.env` files, and user-triggered HTTP execution through the extension host.
 
 ## Architecture Overview
 
@@ -14,16 +14,28 @@ This repository is a TypeScript VS Code extension bundled with esbuild.
 - The source entry point is `src/extension.ts`.
 - `src/extension.ts` exports `activate` and `deactivate`.
 - Commands are contributed in `package.json` and implemented through VS Code's command API.
-- Tests are TypeScript Mocha tests compiled to `out/` and run with `vscode-test`.
+- Request parsing, environment resolution, and request execution live under `src/request/`.
+- Shared low-level helpers live under `src/shared/`.
+- Webview panel/editor code lives under `src/webview/`.
+- Tests are TypeScript Mocha tests in `test/`, compiled to `out/test/`, and run with `vscode-test`.
 - Bundling is handled by `esbuild.js`.
 
-There is not yet a request execution layer, file parser, HTTP client, Webview UI, storage layer, or domain model.
+There is not yet a persistent storage layer beyond workspace files, a broader domain model, or a separate frontend framework for Webviews.
 
 ## Important Files and Folders
 
 - `package.json`: VS Code extension manifest, contributed commands, npm scripts, and dev dependencies.
 - `src/extension.ts`: Extension activation entry point and command registration.
-- `src/test/extension.test.ts`: Current extension test scaffold.
+- `src/request/types.ts`: Request/response types and supported HTTP method helpers.
+- `src/request/requestFile.ts`: `.api.json` request parser and validation.
+- `src/request/environment.ts`: `.env` parsing and `{{VARIABLE}}` substitution.
+- `src/request/requestRunner.ts`: User-triggered HTTP execution through `fetch`.
+- `src/shared/object.ts`: Shared object and string-record type guards.
+- `src/webview/requestEditorProvider.ts`: Custom text editor provider for `.api.json` files.
+- `src/webview/requestPanel.ts`: Singleton API Workbench panel.
+- `src/webview/requestWebview.ts`: Webview message handling and environment-aware request execution.
+- `src/webview/getWebviewHtml.ts`: Generated Webview HTML, CSS, and client-side script.
+- `test/`: TypeScript Mocha tests compiled to `out/test/`.
 - `esbuild.js`: esbuild bundling configuration for the extension runtime.
 - `tsconfig.json`: TypeScript compiler settings.
 - `eslint.config.mjs`: ESLint configuration.
@@ -77,6 +89,8 @@ npm test
 
 `npm test` uses `vscode-test`. The `pretest` script runs `compile-tests`, `compile`, and `lint` first.
 
+Tests live outside `src` in the top-level `test/` folder. Imports from tests should reference source modules through `../src/...`.
+
 ## Launch and Debug
 
 Use VS Code's `Run Extension` launch configuration in `.vscode/launch.json`.
@@ -98,7 +112,7 @@ The default build task is `watch`, defined in `.vscode/tasks.json`, and it runs:
 - Write TypeScript with `strict` compiler settings in mind.
 - Keep extension activation lightweight.
 - Register disposables with `context.subscriptions`.
-- Prefer small, focused modules once domain code is added.
+- Prefer small, focused modules and keep request logic separate from activation and Webview plumbing.
 - Keep command IDs namespaced under `api-companion`.
 - Use VS Code APIs instead of Node-only behavior when interacting with workspace files where possible.
 - Keep user-facing errors clear and actionable.
@@ -111,8 +125,6 @@ The default build task is `watch`, defined in `.vscode/tasks.json`, and it runs:
   - Use semicolons.
 
 ## Rules for Webview Code
-
-There is no Webview code yet. When Webview UI is added:
 
 - Keep Webview-specific code separate from extension activation and request execution logic.
 - Do not inline large UI implementations into `src/extension.ts`.
@@ -141,22 +153,18 @@ There is no Webview code yet. When Webview UI is added:
 
 ## Request File Structure
 
-The request file format has not been implemented yet.
-
-Intended direction:
-
 - Requests should be file-based and stored in the workspace.
 - Request definitions should be human-readable and version-control friendly.
-- The format should support at minimum:
-  - Request name
-  - HTTP method
-  - URL
-  - Headers
-  - Query parameters
-  - Body
-  - Optional variables or environment references
+- The current canonical file extension is `.api.json`.
+- Request files currently support:
+  - `name`: non-empty string
+  - `method`: one of `GET`, `POST`, `PUT`, `PATCH`, `DELETE`, `HEAD`, or `OPTIONS`
+  - `url`: `http` or `https` URL
+  - `headers`: object with string values
+  - `body`: any JSON value, stored as `null` when absent in the editor
+- Environment references use `{{VARIABLE_NAME}}` syntax and are resolved from a `.env` file in the same directory as the request file when sending a request.
 
-Before implementing request parsing, define and document the canonical file format with examples, then add parser tests.
+Do not change the request file format without updating examples, parser behavior, tests, and user-facing documentation.
 
 ## What Not To Change Without Asking
 
@@ -164,18 +172,15 @@ Before implementing request parsing, define and document the canonical file form
 - Do not replace the build system or test runner without asking.
 - Do not introduce a frontend framework for Webviews without asking.
 - Do not add runtime dependencies for HTTP clients, parsers, state management, or UI without asking.
-- Do not change the request file format after it is introduced without asking.
+- Do not change the request file format without asking.
 - Do not add network execution behavior that sends real HTTP requests without clear user-triggered action.
 - Do not remove generated scaffold files such as `README.md`, `CHANGELOG.md`, or VS Code config unless the user asks for cleanup.
 - Do not commit, push, publish, or package a `.vsix` unless explicitly requested.
 
 ## TODO
 
-- Replace the placeholder Hello World command with the first real API Companion command.
-- Define the request file format.
-- Add parser and validation modules.
-- Add request execution service.
-- Decide whether to use built-in `fetch`, Node HTTP APIs, or an HTTP client dependency.
-- Add Webview architecture and security scaffolding.
-- Add real extension tests for activation, commands, parsing, and execution behavior.
+- Document the current `.api.json` format and environment variable behavior in `README.md`.
+- Add broader extension tests for activation and command registration.
+- Split `src/webview/getWebviewHtml.ts` into smaller assets/modules when doing a planned Webview cleanup.
+- Add request execution cancellation or timeout handling if long-running requests become a problem.
 - Update `README.md` with actual usage once features exist.
