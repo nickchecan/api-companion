@@ -1,71 +1,106 @@
-# api-companion README
+# API Companion for VS Code
 
-This is the README for your extension "api-companion". After writing up a brief description, we recommend including the following sections.
+API Companion brings a Postman-like request workflow directly into Visual Studio Code. It lets developers define API requests as readable `.api.json` files, edit them through a focused request UI, and send them from the editor without switching tools.
+
+Because requests live in your workspace, they can be reviewed, shared, versioned, and kept next to the code that depends on them. API Companion is especially useful when you want lightweight endpoint testing, team-friendly request definitions, and environment-based values without maintaining a separate API client collection.
+
+<p align="center">
+  <img src="assets/demo.gif" alt="API Companion demo" width="860">
+</p>
 
 ## Features
 
-Describe specific features of your extension including screenshots of your extension in action. Image paths are relative to this README file.
+- Create and edit `.api.json` request files with a custom VS Code editor.
+- Open the API Workbench for a dedicated request-building experience.
+- Send HTTP and HTTPS requests from inside VS Code.
+- View response status, headers, and body after execution.
+- Store request definitions as plain JSON files that work well with Git.
+- Use sibling `.env` files to substitute values such as hosts, tokens, and credentials.
+- Keep request execution in the extension host instead of the Webview.
 
-For example if there is an image subfolder under your extension project workspace:
+## Why Use API Companion?
 
-\!\[feature X\]\(images/feature-x.png\)
+API testing often lives outside the project, which makes requests harder to discover, review, and keep in sync with the codebase. API Companion keeps the request workflow close to the source.
 
-> Tip: Many popular extensions utilize animations. This is an excellent way to show off your extension! We recommend short, focused animations that are easy to follow.
+Use it to:
 
-## Requirements
+- Document important endpoints with executable examples.
+- Share API requests through the same pull requests as application code.
+- Test local, staging, or production endpoints with environment variables.
+- Avoid context switching while building or debugging API integrations.
 
-If you have any requirements or dependencies, add a section describing those and how to install and configure them.
+## Getting Started
 
-## Extension Settings
+1. Create a file ending in `.api.json` in your workspace.
+2. Add a request definition.
+3. Open the file in VS Code to use the custom request editor.
+4. Send the request from the editor, or run `API Companion: Open API Workbench` from the Command Palette.
 
-Include if your extension adds any VS Code settings through the `contributes.configuration` extension point.
+Example request file:
 
-For example:
+```json
+{
+  "name": "Get user profile",
+  "method": "GET",
+  "url": "https://api.example.com/users/{{USER_ID}}",
+  "headers": {
+    "Authorization": "Bearer {{API_TOKEN}}",
+    "Accept": "application/json"
+  },
+  "body": null
+}
+```
 
-This extension contributes the following settings:
+## Request File Format
 
-* `myExtension.enable`: Enable/disable this extension.
-* `myExtension.thing`: Set to `blah` to do something.
+Request files use the `.api.json` extension and support:
 
-## Known Issues
+| Property | Required | Description |
+| --- | --- | --- |
+| `name` | Yes | Human-readable request name. |
+| `method` | Yes | One of `GET`, `POST`, `PUT`, `PATCH`, `DELETE`, `HEAD`, or `OPTIONS`. |
+| `url` | Yes | An `http` or `https` URL. |
+| `headers` | No | JSON object where each header value is a string. |
+| `body` | No | Any JSON value. Use `null` when the request does not need a body. |
 
-Calling out known issues can help limit users opening duplicate issues against your extension.
+## Environment Variables
 
-## Release Notes
+API Companion resolves `{{VARIABLE_NAME}}` placeholders from a `.env` file in the same folder as the `.api.json` request file.
 
-Users appreciate release notes as you update your extension.
+Example `.env` file:
 
-### 1.0.0
+```sh
+USER_ID=123
+API_TOKEN=your-token-here
+BASE_URL=https://api.example.com
+```
 
-Initial release of ...
+You can use variables in URLs, headers, and request bodies:
 
-### 1.0.1
+```json
+{
+  "name": "Create project",
+  "method": "POST",
+  "url": "{{BASE_URL}}/projects",
+  "headers": {
+    "Authorization": "Bearer {{API_TOKEN}}",
+    "Content-Type": "application/json"
+  },
+  "body": {
+    "name": "Launch Plan"
+  }
+}
+```
 
-Fixed issue #.
+## Commands
 
-### 1.1.0
+API Companion contributes these commands to VS Code:
 
-Added features X, Y, and Z.
+| Command | Description |
+| --- | --- |
+| `API Companion: Open API Workbench` | Opens the API Workbench panel. |
+| `API Companion: Load Request File` | Loads the active `.api.json` file into the API Workbench. |
 
----
+## Feedback
 
-## Following extension guidelines
-
-Ensure that you've read through the extensions guidelines and follow the best practices for creating your extension.
-
-* [Extension Guidelines](https://code.visualstudio.com/api/references/extension-guidelines)
-
-## Working with Markdown
-
-You can author your README using Visual Studio Code. Here are some useful editor keyboard shortcuts:
-
-* Split the editor (`Cmd+\` on macOS or `Ctrl+\` on Windows and Linux).
-* Toggle preview (`Shift+Cmd+V` on macOS or `Shift+Ctrl+V` on Windows and Linux).
-* Press `Ctrl+Space` (Windows, Linux, macOS) to see a list of Markdown snippets.
-
-## For more information
-
-* [Visual Studio Code's Markdown Support](http://code.visualstudio.com/docs/languages/markdown)
-* [Markdown Syntax Reference](https://help.github.com/articles/markdown-basics/)
-
-**Enjoy!**
+Found a bug or have an idea for improving API Companion? Open an issue in the project repository.
