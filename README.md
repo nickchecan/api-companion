@@ -1,11 +1,13 @@
 # API Companion for VS Code
 
+[![semantic-release: angular](https://img.shields.io/badge/semantic--release-angular-e10079?logo=semantic-release)](https://github.com/semantic-release/semantic-release)
+
 API Companion brings a Postman-like request workflow directly into Visual Studio Code. It lets developers define API requests as readable `.api.json` files, edit them through a focused request UI, and send them from the editor without switching tools.
 
 Because requests live in your workspace, they can be reviewed, shared, versioned, and kept next to the code that depends on them. API Companion is especially useful when you want lightweight endpoint testing, team-friendly request definitions, and environment-based values without maintaining a separate API client collection.
 
 <p align="center">
-  <img src="assets/demo.gif" alt="API Companion demo" width="860">
+  <img src="https://raw.githubusercontent.com/nickchecan/api-companion/main/assets/demo.gif" alt="API Companion demo" width="860">
 </p>
 
 ## Features
