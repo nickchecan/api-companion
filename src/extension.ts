@@ -5,8 +5,10 @@ import { RequestEditorProvider } from './webview/requestEditorProvider';
 import { ApiWorkbenchPanel } from './webview/requestPanel';
 
 export function activate(context: vscode.ExtensionContext) {
+	const extensionVersion = readExtensionVersion(context);
+
 	const openApiWorkbench = vscode.commands.registerCommand('api-companion.openApiWorkbench', () => {
-		ApiWorkbenchPanel.createOrShow(context.extensionUri);
+		ApiWorkbenchPanel.createOrShow(context.extensionUri, extensionVersion);
 	});
 
 	const loadRequestFile = vscode.commands.registerCommand('api-companion.loadRequestFile', async () => {
@@ -24,7 +26,7 @@ export function activate(context: vscode.ExtensionContext) {
 
 		try {
 			const request = parseRequestFile(editor.document.getText());
-			const panel = ApiWorkbenchPanel.createOrShow(context.extensionUri);
+			const panel = ApiWorkbenchPanel.createOrShow(context.extensionUri, extensionVersion);
 
 			await panel.loadRequest(request, editor.document.uri);
 		} catch (error) {
@@ -32,7 +34,13 @@ export function activate(context: vscode.ExtensionContext) {
 		}
 	});
 
-	context.subscriptions.push(openApiWorkbench, loadRequestFile, RequestEditorProvider.register(context));
+	context.subscriptions.push(openApiWorkbench, loadRequestFile, RequestEditorProvider.register(context, extensionVersion));
 }
 
 export function deactivate() {}
+
+function readExtensionVersion(context: vscode.ExtensionContext): string {
+	const packageJson = context.extension.packageJSON as { version?: unknown };
+
+	return typeof packageJson.version === 'string' ? packageJson.version : '0.0.0';
+}

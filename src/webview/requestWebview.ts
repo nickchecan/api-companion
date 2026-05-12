@@ -17,6 +17,14 @@ interface WebviewReadyMessage {
 	type: 'webviewReady';
 }
 
+interface OpenRepositoryMessage {
+	type: 'openRepository';
+}
+
+interface OpenIssuesMessage {
+	type: 'openIssues';
+}
+
 export interface RequestChangedMessage {
 	type: 'requestChanged';
 	name: string;
@@ -27,6 +35,7 @@ export interface RequestChangedMessage {
 }
 
 export interface RequestWebviewHandlers {
+	extensionVersion?: string;
 	onReady?: () => void;
 	onRequestChanged?: (message: RequestChangedMessage) => void;
 	onSendRequest?: (message: SendRequestMessage) => Promise<ApiResponse>;
@@ -40,7 +49,7 @@ export function initializeRequestWebview(
 		? { onReady: handlersOrOnReady }
 		: handlersOrOnReady ?? {};
 
-	webview.html = getWebviewHtml(webview);
+	webview.html = getWebviewHtml(webview, handlers.extensionVersion ?? '0.0.0');
 
 	return webview.onDidReceiveMessage((message: unknown) => {
 		if (isWebviewReadyMessage(message)) {
@@ -50,6 +59,16 @@ export function initializeRequestWebview(
 
 		if (isRequestChangedMessage(message)) {
 			handlers.onRequestChanged?.(message);
+			return;
+		}
+
+		if (isOpenRepositoryMessage(message)) {
+			void vscode.env.openExternal(vscode.Uri.parse('https://github.com/nickchecan/api-companion'));
+			return;
+		}
+
+		if (isOpenIssuesMessage(message)) {
+			void vscode.env.openExternal(vscode.Uri.parse('https://github.com/nickchecan/api-companion/issues'));
 			return;
 		}
 
@@ -159,6 +178,26 @@ function isWebviewReadyMessage(message: unknown): message is WebviewReadyMessage
 	const candidate = message as Partial<WebviewReadyMessage>;
 
 	return candidate.type === 'webviewReady';
+}
+
+function isOpenRepositoryMessage(message: unknown): message is OpenRepositoryMessage {
+	if (!message || typeof message !== 'object') {
+		return false;
+	}
+
+	const candidate = message as Partial<OpenRepositoryMessage>;
+
+	return candidate.type === 'openRepository';
+}
+
+function isOpenIssuesMessage(message: unknown): message is OpenIssuesMessage {
+	if (!message || typeof message !== 'object') {
+		return false;
+	}
+
+	const candidate = message as Partial<OpenIssuesMessage>;
+
+	return candidate.type === 'openIssues';
 }
 
 function isRequestChangedMessage(message: unknown): message is RequestChangedMessage {

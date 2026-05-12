@@ -1,8 +1,9 @@
 import * as vscode from 'vscode';
 
-export function getWebviewHtml(webview: vscode.Webview): string {
+export function getWebviewHtml(webview: vscode.Webview, extensionVersion: string): string {
 	const nonce = getNonce();
 	const cspSource = webview.cspSource;
+	const escapedExtensionVersion = escapeHtmlContent(extensionVersion);
 
 	return `<!DOCTYPE html>
 <html lang="en">
@@ -16,9 +17,15 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 			color-scheme: light dark;
 		}
 
+		html,
+		body {
+			height: 100%;
+			overflow: hidden;
+		}
+
 		body {
 			margin: 0;
-			padding: 20px;
+			padding: 20px 20px 72px;
 			color: var(--vscode-foreground);
 			background: var(--vscode-editor-background);
 			font-family: var(--vscode-font-family);
@@ -557,8 +564,8 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 			.response-body-content {
 				display: grid;
 				grid-template-columns: auto minmax(0, 1fr);
-				min-height: 72px;
-				max-height: calc(100vh - 320px);
+				min-height: min(72px, var(--response-area-max-height, 72px));
+				max-height: var(--response-area-max-height, calc(100vh - 320px));
 				overflow: auto;
 				position: relative;
 				--hover-line-height: 0px;
@@ -590,16 +597,96 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 			}
 
 			.response-headers-content {
+				max-height: var(--response-area-max-height, calc(100vh - 320px));
+				overflow: auto;
 				background: var(--vscode-editor-inactiveSelectionBackground);
 			}
 
+			#preview-panel {
+				min-height: 0;
+			}
+
 			.response-preview {
+				display: block;
 				width: 100%;
-				min-height: 72px;
-				max-height: calc(100vh - 320px);
+				height: var(--response-area-max-height, max(360px, calc(100vh - 260px)));
+				max-height: var(--response-area-max-height, max(360px, calc(100vh - 260px)));
 				border: 0;
 				background: #ffffff;
+			}
+
+			#response-preview-empty {
+				max-height: var(--response-area-max-height, 360px);
+				overflow: auto;
+			}
+
+			.editor-footer {
+				display: flex;
+				align-items: center;
+				gap: 16px;
+				position: fixed;
+				right: 0;
+				bottom: 0;
+				left: 0;
+				z-index: 10;
+				box-sizing: border-box;
+				padding: 8px 20px;
+				color: var(--vscode-descriptionForeground);
+				background: var(--vscode-editor-background);
+				border-top: 1px solid var(--vscode-panel-border);
+				font-size: 12px;
+				line-height: 1.4;
+			}
+
+			.editor-footer-brand {
+				margin-left: auto;
+				color: var(--vscode-editor-foreground);
+				font-weight: 600;
+			}
+
+			.editor-footer-icon {
+				display: inline-flex;
+				align-items: center;
+				justify-content: center;
+				width: 24px;
+				height: 24px;
+				flex: 0 0 auto;
+				padding: 0;
+				color: var(--vscode-editor-foreground);
+				background: transparent;
+				border: 0;
+				border-radius: 4px;
+				cursor: pointer;
+			}
+
+			.editor-footer-icon:hover,
+			.editor-footer-icon:focus {
+				background: var(--vscode-toolbar-hoverBackground, var(--vscode-list-hoverBackground));
+			}
+
+			.editor-footer-icon:focus {
+				outline: 1px solid var(--vscode-focusBorder);
+				outline-offset: 2px;
+			}
+
+			.editor-footer-icon svg {
+				width: 16px;
+				height: 16px;
 				pointer-events: none;
+			}
+
+			.editor-footer-version {
+				display: inline-flex;
+				align-items: center;
+				min-height: 20px;
+				padding: 2px 8px;
+				color: var(--vscode-descriptionForeground);
+				background: var(--vscode-editor-inactiveSelectionBackground);
+				border: 1px solid var(--vscode-panel-border);
+				border-radius: 999px;
+				box-sizing: border-box;
+				font-size: 11px;
+				font-weight: 600;
 			}
 
 			.hidden {
@@ -621,6 +708,11 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 		@media (max-width: 640px) {
 			.request-bar {
 				grid-template-columns: 1fr;
+			}
+
+			.editor-footer {
+				align-items: flex-start;
+				gap: 8px;
 			}
 		}
 	</style>
@@ -775,6 +867,29 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 				<pre class="response-content" id="response-preview-empty">HTML preview is available for HTML responses.</pre>
 			</div>
 		</section>
+		<footer class="editor-footer" aria-label="Editor summary">
+			<button class="editor-footer-icon" id="footer-repository-link" type="button" aria-label="Open API Companion repository" title="Open API Companion repository">
+				<svg viewBox="0 0 16 16" aria-hidden="true" fill="currentColor">
+					<path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82A7.6 7.6 0 0 1 8 3.86c.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"></path>
+				</svg>
+			</button>
+			<button class="editor-footer-icon" id="footer-issues-link" type="button" aria-label="Open API Companion issues" title="Open API Companion issues">
+				<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+					<path d="m8 2 1.88 1.88"></path>
+					<path d="M14.12 3.88 16 2"></path>
+					<path d="M9 7.13v-1a3 3 0 0 1 6 0v1"></path>
+					<path d="M12 20c-3.3 0-6-2.7-6-6v-3a6 6 0 0 1 12 0v3c0 3.3-2.7 6-6 6Z"></path>
+					<path d="M4 13H2"></path>
+					<path d="M22 13h-2"></path>
+					<path d="M4.5 8.5 3 7"></path>
+					<path d="m21 7-1.5 1.5"></path>
+					<path d="M12 20v-9"></path>
+					<path d="M8 11h8"></path>
+				</svg>
+			</button>
+			<div class="editor-footer-brand">API Companion</div>
+			<span class="editor-footer-version" aria-label="API Companion version">v${escapedExtensionVersion}</span>
+		</footer>
 
 	<script nonce="${nonce}">
 			const vscode = acquireVsCodeApi();
@@ -830,6 +945,9 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 			const responseRaw = document.getElementById('response-raw');
 			const responsePreview = document.getElementById('response-preview');
 			const responsePreviewEmpty = document.getElementById('response-preview-empty');
+			const footerRepositoryLink = document.getElementById('footer-repository-link');
+			const footerIssuesLink = document.getElementById('footer-issues-link');
+			const editorFooter = document.querySelector('.editor-footer');
 				const responseBodyContent = document.getElementById('response-body-content');
 				const responseBodyLines = document.getElementById('response-body-lines');
 				const responseBody = document.getElementById('response-body');
@@ -840,6 +958,20 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 				let activeRequestBodyType = 'raw';
 				renderRequestParamsFromUrl();
 				renderRequestHeaders({});
+				updateResponseAreaBounds();
+				window.addEventListener('resize', updateResponseAreaBounds);
+
+				footerRepositoryLink.addEventListener('click', () => {
+					vscode.postMessage({
+						type: 'openRepository',
+					});
+				});
+
+				footerIssuesLink.addEventListener('click', () => {
+					vscode.postMessage({
+						type: 'openIssues',
+					});
+				});
 
 				requestTitleContainer.addEventListener('click', (event) => {
 					if (event.target === requestTitleInput) {
@@ -887,6 +1019,7 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 					applyRequestBodyType(requestBodyType.value);
 					setRequestBodyContent('');
 					renderRequestBodyFormRows('');
+					updateResponseAreaBounds();
 					notifyRequestChanged();
 				});
 
@@ -916,14 +1049,17 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 
 				addRequestParam.addEventListener('click', () => {
 					addRequestParamRow('', '');
+					updateResponseAreaBounds();
 				});
 
 				addRequestHeader.addEventListener('click', () => {
 					addRequestHeaderRow('', '');
+					updateResponseAreaBounds();
 				});
 
 				addRequestBodyFormRow.addEventListener('click', () => {
 					addBodyFormRow('', '');
+					updateResponseAreaBounds();
 				});
 
 				requestBodyBeautify.addEventListener('click', () => {
@@ -1026,10 +1162,11 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 		window.addEventListener('message', (event) => {
 			const message = event.data;
 
-			if (message.type === 'requestComplete') {
+				if (message.type === 'requestComplete') {
 				send.disabled = false;
 				stopRequestTimer();
 				renderResponse(message.response);
+				updateResponseAreaBounds();
 				return;
 			}
 
@@ -1042,6 +1179,7 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 					setRawContent(message.message);
 					setBodyContent(message.message);
 					setPreviewContent('', false, latestRequestUrl);
+					updateResponseAreaBounds();
 					return;
 				}
 
@@ -1058,6 +1196,7 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 							: formatBody(message.request.body));
 						renderRequestBodyFormRows(requestBody.value);
 						setRequestBodyType(inferRequestBodyType(message.request.headers || {}, requestBody.value, activeRequestBodyType));
+						updateResponseAreaBounds();
 				}
 			});
 
@@ -1075,6 +1214,46 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 					setRawContent(result.body || '(empty)');
 					setFormattedBodyContent(result.body || '(empty)', result.headers);
 					setPreviewContent(result.body || '', hasHtmlContentType(result.headers), latestRequestUrl);
+					updateResponseAreaBounds();
+				}
+
+				function updateResponseAreaBounds() {
+					const activeResponsePanel = readActiveResponsePanel();
+
+					if (!activeResponsePanel || !editorFooter) {
+						return;
+					}
+
+					const panelTop = activeResponsePanel.getBoundingClientRect().top;
+					const footerTop = editorFooter.getBoundingClientRect().top;
+					const availableHeight = Math.max(0, Math.floor(footerTop - panelTop - 12));
+					const nextHeight = availableHeight + 'px';
+
+					responseBodyContent.style.setProperty('--response-area-max-height', nextHeight);
+					responseHeaders.style.setProperty('--response-area-max-height', nextHeight);
+					responseRawContent.style.setProperty('--response-area-max-height', nextHeight);
+					responsePreview.style.setProperty('--response-area-max-height', nextHeight);
+					responsePreviewEmpty.style.setProperty('--response-area-max-height', nextHeight);
+				}
+
+				function readActiveResponsePanel() {
+					if (!bodyPanel.classList.contains('hidden')) {
+						return responseBodyContent;
+					}
+
+					if (!rawPanel.classList.contains('hidden')) {
+						return responseRawContent;
+					}
+
+					if (!headersPanel.classList.contains('hidden')) {
+						return responseHeaders;
+					}
+
+					if (!previewPanel.classList.contains('hidden')) {
+						return responsePreview.classList.contains('hidden') ? responsePreviewEmpty : responsePreview;
+					}
+
+					return undefined;
 				}
 
 				function setResponseStatus(text, badgeType) {
@@ -1193,6 +1372,7 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 					requestAuthorizationPanel.classList.toggle('hidden', !showAuthorization);
 					requestHeadersPanel.classList.toggle('hidden', !showHeaders);
 					requestBodyPanel.classList.toggle('hidden', !showBody);
+					updateResponseAreaBounds();
 				}
 
 				function showResponseTab(tabName) {
@@ -1213,6 +1393,7 @@ export function getWebviewHtml(webview: vscode.Webview): string {
 					headersPanel.classList.toggle('hidden', !showHeaders);
 					rawPanel.classList.toggle('hidden', !showRaw);
 					previewPanel.classList.toggle('hidden', !showPreview);
+					updateResponseAreaBounds();
 				}
 
 				function renderRequestParamsFromUrl() {
@@ -2223,4 +2404,11 @@ function getNonce(): string {
 	}
 
 	return text;
+}
+
+function escapeHtmlContent(content: string): string {
+	return content
+		.replace(/&/g, '&amp;')
+		.replace(/</g, '&lt;')
+		.replace(/>/g, '&gt;');
 }

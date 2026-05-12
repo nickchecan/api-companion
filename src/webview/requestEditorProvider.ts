@@ -12,12 +12,15 @@ import {
 export class RequestEditorProvider implements vscode.CustomTextEditorProvider {
 	public static readonly viewType = 'api-companion.requestEditor';
 
-	public constructor(private readonly extensionUri: vscode.Uri) {}
+	public constructor(
+		private readonly extensionUri: vscode.Uri,
+		private readonly extensionVersion: string,
+	) {}
 
-	public static register(context: vscode.ExtensionContext): vscode.Disposable {
+	public static register(context: vscode.ExtensionContext, extensionVersion: string): vscode.Disposable {
 		return vscode.window.registerCustomEditorProvider(
 			RequestEditorProvider.viewType,
-			new RequestEditorProvider(context.extensionUri),
+			new RequestEditorProvider(context.extensionUri, extensionVersion),
 			{
 				webviewOptions: {
 					retainContextWhenHidden: true,
@@ -38,6 +41,7 @@ export class RequestEditorProvider implements vscode.CustomTextEditorProvider {
 
 		let pendingDocumentText: string | undefined;
 		const messageSubscription = initializeRequestWebview(webviewPanel.webview, {
+			extensionVersion: this.extensionVersion,
 			onReady: () => {
 				void this.loadDocument(webviewPanel, document);
 			},
