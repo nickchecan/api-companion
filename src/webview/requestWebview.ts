@@ -64,12 +64,12 @@ export function initializeRequestWebview(
 		}
 
 		if (isOpenRepositoryMessage(message)) {
-			void vscode.env.openExternal(vscode.Uri.parse('https://github.com/nickchecan/api-companion'));
+			void vscode.env.openExternal(vscode.Uri.parse('https://github.com/nickchecan/restcraft'));
 			return;
 		}
 
 		if (isOpenIssuesMessage(message)) {
-			void vscode.env.openExternal(vscode.Uri.parse('https://github.com/nickchecan/api-companion/issues'));
+			void vscode.env.openExternal(vscode.Uri.parse('https://github.com/nickchecan/restcraft/issues'));
 			return;
 		}
 

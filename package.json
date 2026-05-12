@@ -1,13 +1,13 @@
 {
-  "name": "api-companion",
-  "displayName": "api-companion",
+  "name": "restcraft",
+  "displayName": "RestCraft",
   "description": "Create, manage, and execute API requests from file-based definitions using a Postman-like interface inside Visual Studio Code.",
   "version": "0.0.1",
   "publisher": "nickchecan",
   "icon": "media/icon-gear-clean.png",
   "repository": {
     "type": "git",
-    "url": "https://github.com/nickchecan/api-companion.git"
+    "url": "https://github.com/nickchecan/restcraft.git"
   },
   "engines": {
     "vscode": "^1.118.0"
@@ -29,24 +29,24 @@
     "environment"
   ],
   "activationEvents": [
-    "onCustomEditor:api-companion.requestEditor"
+    "onCustomEditor:restcraft.requestEditor"
   ],
   "main": "./dist/extension.js",
   "contributes": {
     "commands": [
       {
-        "command": "api-companion.openApiWorkbench",
-        "title": "API Companion: Open API Workbench"
+        "command": "restcraft.openApiWorkbench",
+        "title": "RestCraft: Open API Workbench"
       },
       {
-        "command": "api-companion.loadRequestFile",
-        "title": "API Companion: Load Request File"
+        "command": "restcraft.loadRequestFile",
+        "title": "RestCraft: Load Request File"
       }
     ],
     "customEditors": [
       {
-        "viewType": "api-companion.requestEditor",
-        "displayName": "API Companion Request",
+        "viewType": "restcraft.requestEditor",
+        "displayName": "RestCraft Request",
         "selector": [
           {
             "filenamePattern": "*.api.json"

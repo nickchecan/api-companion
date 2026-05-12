@@ -7,11 +7,11 @@ import { ApiWorkbenchPanel } from './webview/requestPanel';
 export function activate(context: vscode.ExtensionContext) {
 	const extensionVersion = readExtensionVersion(context);
 
-	const openApiWorkbench = vscode.commands.registerCommand('api-companion.openApiWorkbench', () => {
+	const openApiWorkbench = vscode.commands.registerCommand('restcraft.openApiWorkbench', () => {
 		ApiWorkbenchPanel.createOrShow(context.extensionUri, extensionVersion);
 	});
 
-	const loadRequestFile = vscode.commands.registerCommand('api-companion.loadRequestFile', async () => {
+	const loadRequestFile = vscode.commands.registerCommand('restcraft.loadRequestFile', async () => {
 		const editor = vscode.window.activeTextEditor;
 
 		if (!editor) {

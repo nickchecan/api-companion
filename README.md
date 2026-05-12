@@ -1,13 +1,13 @@
-# API Companion for VS Code
+# RestCraft for VS Code
 
 [![semantic-release: angular](https://img.shields.io/badge/semantic--release-angular-e10079?logo=semantic-release)](https://github.com/semantic-release/semantic-release)
 
-API Companion brings a Postman-like request workflow directly into Visual Studio Code. It lets developers define API requests as readable `.api.json` files, edit them through a focused request UI, and send them from the editor without switching tools.
+RestCraft brings a Postman-like request workflow directly into Visual Studio Code. It lets developers define API requests as readable `.api.json` files, edit them through a focused request UI, and send them from the editor without switching tools.
 
-Because requests live in your workspace, they can be reviewed, shared, versioned, and kept next to the code that depends on them. API Companion is especially useful when you want lightweight endpoint testing, team-friendly request definitions, and environment-based values without maintaining a separate API client collection.
+Because requests live in your workspace, they can be reviewed, shared, versioned, and kept next to the code that depends on them. RestCraft is especially useful when you want lightweight endpoint testing, team-friendly request definitions, and environment-based values without maintaining a separate API client collection.
 
 <p align="center">
-  <img src="assets/demo.gif" alt="API Companion demo" width="860">
+  <img src="assets/demo.gif" alt="RestCraft demo" width="860">
 </p>
 
 ## Features
@@ -20,9 +20,9 @@ Because requests live in your workspace, they can be reviewed, shared, versioned
 - Use sibling `.env` files to substitute values such as hosts, tokens, and credentials.
 - Keep request execution in the extension host instead of the Webview.
 
-## Why Use API Companion?
+## Why Use RestCraft?
 
-API testing often lives outside the project, which makes requests harder to discover, review, and keep in sync with the codebase. API Companion keeps the request workflow close to the source.
+API testing often lives outside the project, which makes requests harder to discover, review, and keep in sync with the codebase. RestCraft keeps the request workflow close to the source.
 
 Use it to:
 
@@ -36,7 +36,7 @@ Use it to:
 1. Create a file ending in `.api.json` in your workspace.
 2. Add a request definition.
 3. Open the file in VS Code to use the custom request editor.
-4. Send the request from the editor, or run `API Companion: Open API Workbench` from the Command Palette.
+4. Send the request from the editor, or run `RestCraft: Open API Workbench` from the Command Palette.
 
 Example request file:
 
@@ -67,7 +67,7 @@ Request files use the `.api.json` extension and support:
 
 ## Environment Variables
 
-API Companion resolves `{{VARIABLE_NAME}}` placeholders from a `.env` file in the same folder as the `.api.json` request file.
+RestCraft resolves `{{VARIABLE_NAME}}` placeholders from a `.env` file in the same folder as the `.api.json` request file.
 
 Example `.env` file:
 
@@ -96,13 +96,13 @@ You can use variables in URLs, headers, and request bodies:
 
 ## Commands
 
-API Companion contributes these commands to VS Code:
+RestCraft contributes these commands to VS Code:
 
 | Command | Description |
 | --- | --- |
-| `API Companion: Open API Workbench` | Opens the API Workbench panel. |
-| `API Companion: Load Request File` | Loads the active `.api.json` file into the API Workbench. |
+| `RestCraft: Open API Workbench` | Opens the API Workbench panel. |
+| `RestCraft: Load Request File` | Loads the active `.api.json` file into the API Workbench. |
 
 ## Feedback
 
-Found a bug or have an idea for improving API Companion? Open an issue in the project repository.
+Found a bug or have an idea for improving RestCraft? Open an issue in the project repository.

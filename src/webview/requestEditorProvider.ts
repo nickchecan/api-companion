@@ -11,7 +11,7 @@ import {
 } from './requestWebview';
 
 export class RequestEditorProvider implements vscode.CustomTextEditorProvider {
-	public static readonly viewType = 'api-companion.requestEditor';
+	public static readonly viewType = 'restcraft.requestEditor';
 
 	public constructor(
 		private readonly extensionUri: vscode.Uri,
