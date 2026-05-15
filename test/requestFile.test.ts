@@ -1,5 +1,6 @@
 import * as assert from 'assert';
 
+import { createDefaultRequestFileContent, createRequestFileName } from '../src/request/createRequestFile';
 import { isRequestFileName, parseRequestFile } from '../src/request/requestFile';
 
 suite('Request file parser', () => {
@@ -208,5 +209,31 @@ suite('Request file parser', () => {
 	test('matches request file names', () => {
 		assert.strictEqual(isRequestFileName('/workspace/get-users.api.json'), true);
 		assert.strictEqual(isRequestFileName('/workspace/get-users.json'), false);
+	});
+
+	test('creates canonical request file names from user input', () => {
+		assert.strictEqual(createRequestFileName('get-users'), 'get-users.api.json');
+		assert.strictEqual(createRequestFileName(' get-users.api.json '), 'get-users.api.json');
+	});
+
+	test('rejects path-like request file names', () => {
+		assert.throws(
+			() => createRequestFileName('requests/get-users'),
+			/cannot include path separators/,
+		);
+	});
+
+	test('creates parseable default request file content', () => {
+		const request = parseRequestFile(createDefaultRequestFileContent('get-users.api.json'));
+
+		assert.deepStrictEqual(request, {
+			name: 'get-users',
+			method: 'GET',
+			url: 'https://example.com/',
+			params: [],
+			headerState: [],
+			headers: {},
+			body: null,
+		});
 	});
 });
