@@ -29,7 +29,8 @@
     "environment"
   ],
   "activationEvents": [
-    "onCustomEditor:restcraft.requestEditor"
+    "onCustomEditor:restcraft.requestEditor",
+    "onCommand:restcraft.createRequestFile"
   ],
   "main": "./dist/extension.js",
   "contributes": {
@@ -41,8 +42,20 @@
       {
         "command": "restcraft.loadRequestFile",
         "title": "RestCraft: Load Request File"
+      },
+      {
+        "command": "restcraft.createRequestFile",
+        "title": "RestCraft: Create Request File"
       }
     ],
+    "menus": {
+      "explorer/context": [
+        {
+          "command": "restcraft.createRequestFile",
+          "group": "navigation"
+        }
+      ]
+    },
     "customEditors": [
       {
         "viewType": "restcraft.requestEditor",

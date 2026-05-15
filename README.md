@@ -1,6 +1,9 @@
 # RestCraft for VS Code
 
+[![Latest release](https://img.shields.io/github/v/release/nickchecan/restcraft?label=release)](https://github.com/nickchecan/restcraft/releases/latest)
 [![semantic-release: angular](https://img.shields.io/badge/semantic--release-angular-e10079?logo=semantic-release)](https://github.com/semantic-release/semantic-release)
+[![CI](https://github.com/nickchecan/restcraft/actions/workflows/ci.yml/badge.svg)](https://github.com/nickchecan/restcraft/actions/workflows/ci.yml)
+[![Release](https://github.com/nickchecan/restcraft/actions/workflows/release.yml/badge.svg)](https://github.com/nickchecan/restcraft/actions/workflows/release.yml)
 
 RestCraft brings a Postman-like request workflow directly into Visual Studio Code. It lets developers define API requests as readable `.api.json` files, edit them through a focused request UI, and send them from the editor without switching tools.
 
@@ -13,6 +16,7 @@ Because requests live in your workspace, they can be reviewed, shared, versioned
 ## Features
 
 - Create and edit `.api.json` request files with a custom VS Code editor.
+- Create new request files in the current folder from the Command Palette or Explorer context menu.
 - Open the API Workbench for a dedicated request-building experience.
 - Send HTTP and HTTPS requests from inside VS Code.
 - View response status, headers, and body after execution.
@@ -33,7 +37,7 @@ Use it to:
 
 ## Getting Started
 
-1. Create a file ending in `.api.json` in your workspace.
+1. Run `RestCraft: Create Request File` from the Command Palette or Explorer context menu, or create a file ending in `.api.json` in your workspace.
 2. Add a request definition.
 3. Open the file in VS Code to use the custom request editor.
 4. Send the request from the editor, or run `RestCraft: Open API Workbench` from the Command Palette.
